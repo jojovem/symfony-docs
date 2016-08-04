@@ -660,13 +660,16 @@ the choice is ultimately up to you.
 
         use Symfony\Component\Form\FormBuilderInterface;
 
-        public function buildForm(FormBuilderInterface $builder, array $options)
+        class TaskType extends AbstractType
         {
-            $builder
-                ->add('task')
-                ->add('dueDate', null, array('mapped' => false))
-                ->add('save', SubmitType::class)
-            ;
+            public function buildForm(FormBuilderInterface $builder, array $options)
+            {
+                $builder
+                    ->add('task')
+                    ->add('dueDate', null, array('mapped' => false))
+                    ->add('save', SubmitType::class)
+                ;
+            }
         }
 
     Additionally, if there are any fields on the form that aren't included in
