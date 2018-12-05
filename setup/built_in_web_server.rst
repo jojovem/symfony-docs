@@ -15,13 +15,27 @@ a full-featured web server such as
     The built-in web server is meant to be run in a controlled environment.
     It is not designed to be used on public networks.
 
+Symfony provides a web server built on top of this PHP server to simplify your
+local setup. This server is distributed as a bundle, so you must first install
+and enable the server bundle.
+
+Installing the Web Server Bundle
+--------------------------------
+
+Move into your project directory and run this command:
+
+.. code-block:: terminal
+
+    $ cd your-project/
+    $ composer require symfony/web-server-bundle --dev
+
 Starting the Web Server
 -----------------------
 
-Running a Symfony application using PHP's built-in web server is as easy as
-executing the ``server:start`` command:
+To run a Symfony application using PHP's built-in web server, execute the
+``server:start`` command:
 
-.. code-block:: bash
+.. code-block:: terminal
 
     $ php bin/console server:start
 
@@ -31,32 +45,22 @@ your Symfony application.
 By default, the web server listens on port 8000 on the loopback device. You
 can change the socket passing an IP address and a port as a command-line argument:
 
-.. code-block:: bash
+.. code-block:: terminal
 
+    # passing a specific IP and port
     $ php bin/console server:start 192.168.0.1:8080
 
-.. note::
-
-    You can use the ``--force`` option to force the web server start
-    if the process wasn't correctly stopped (without using the ``server:stop`` command).
-
-    .. code-block:: bash
-
-        $ php bin/console server:start --force
+    # passing '*' as the IP means to use 0.0.0.0 (i.e. any local IP address)
+    $ php bin/console server:start *:8080
 
 .. note::
 
     You can use the ``server:status`` command to check if a web server is
-    listening on a certain socket:
+    listening:
 
-    .. code-block:: bash
+    .. code-block:: terminal
 
         $ php bin/console server:status
-
-        $ php bin/console server:status 192.168.0.1:8080
-
-    The first command shows if your Symfony application will be server through
-    ``localhost:8000``, the second one does the same for ``192.168.0.1:8080``.
 
 .. tip::
 
@@ -73,7 +77,7 @@ can change the socket passing an IP address and a port as a command-line argumen
     to listen on the ``0.0.0.0:8000`` address (i.e. on all IP addresses that
     are assigned to the virtual machine):
 
-    .. code-block:: bash
+    .. code-block:: terminal
 
         $ php bin/console server:start 0.0.0.0:8000
 
@@ -88,38 +92,29 @@ Command Options
 
 The built-in web server expects a "router" script (read about the "router"
 script on `php.net`_) as an argument. Symfony already passes such a router
-script when the command is executed in the ``prod`` or in the ``dev`` environment.
-Use the ``--router`` option in any other environment or to use another router
-script:
+script when the command is executed in the ``prod`` or ``dev`` environment.
+Use the ``--router`` option to use your own router script:
 
-.. code-block:: bash
+.. code-block:: terminal
 
-    $ php bin/console server:start --env=test --router=app/config/router_test.php
+    $ php bin/console server:start --router=config/my_router.php
 
 If your application's document root differs from the standard directory layout,
 you have to pass the correct location using the ``--docroot`` option:
 
-.. code-block:: bash
+.. code-block:: terminal
 
     $ php bin/console server:start --docroot=public_html
 
 Stopping the Server
 -------------------
 
-When you are finished, you can simply stop the web server using the ``server:stop``
+When you are finished, you can stop the web server using the ``server:stop``
 command:
 
-.. code-block:: bash
+.. code-block:: terminal
 
     $ php bin/console server:stop
 
-Like with the start command, if you omit the socket information, Symfony will
-stop the web server bound to ``localhost:8000``. Just pass the socket information
-when the web server listens to another IP address or to another port:
-
-.. code-block:: bash
-
-    $ php bin/console server:stop 192.168.0.1:8080
-
-.. _`built-in web server`: http://www.php.net/manual/en/features.commandline.webserver.php
-.. _`php.net`: http://php.net/manual/en/features.commandline.webserver.php#example-411
+.. _`built-in web server`: https://php.net/manual/en/features.commandline.webserver.php
+.. _`php.net`: https://php.net/manual/en/features.commandline.webserver.php#example-411

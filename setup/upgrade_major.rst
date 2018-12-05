@@ -1,12 +1,12 @@
 .. index::
     single: Upgrading; Major Version
 
-Upgrading a Major Version (e.g. 2.7.0 to 3.0.0)
+Upgrading a Major Version (e.g. 3.4.0 to 4.1.0)
 ===============================================
 
-Every few years, Symfony releases a new major version release (the first number
+Every two years, Symfony releases a new major version release (the first number
 changes). These releases are the trickiest to upgrade, as they are allowed to
-contain BC breaks. However, Symfony tries to make this upgrade process as
+break backward compatibility. However, Symfony makes this upgrade process as
 smooth as possible.
 
 This means that you can update most of your code before the major release is
@@ -30,10 +30,10 @@ backwards incompatible changes. To accomplish this, the "old" (e.g. functions,
 classes, etc) code still works, but is marked as *deprecated*, indicating that
 it will be removed/changed in the future and that you should stop using it.
 
-When the major version is released (e.g. 3.0.0), all deprecated features and
+When the major version is released (e.g. 4.1.0), all deprecated features and
 functionality are removed. So, as long as you've updated your code to stop
 using these deprecated features in the last version before the major (e.g.
-2.8.*), you should be able to upgrade without a problem.
+3.4.*), you should be able to upgrade without a problem.
 
 To help you with this, deprecation notices are triggered whenever you end up
 using a deprecated feature. When visiting your application in the
@@ -44,7 +44,7 @@ in your browser, these notices are shown in the web dev toolbar:
    :align: center
    :class: with-browser
 
-Of course ultimately, you want to stop using the deprecated functionality.
+Ultimately, you should aim to stop using the deprecated functionality.
 Sometimes, this is easy: the warning might tell you exactly what to change.
 
 But other times, the warning might be unclear: a setting somewhere might
@@ -67,15 +67,16 @@ you a nice summary of all deprecation notices at the end of the test report.
 
 All you need to do is install the PHPUnit bridge:
 
-.. code-block:: bash
+.. code-block:: terminal
 
     $ composer require --dev symfony/phpunit-bridge
 
 Now, you can start fixing the notices:
 
-.. code-block:: text
+.. code-block:: terminal
 
-    $ phpunit
+    # this command is available after running "composer require --dev symfony/phpunit-bridge"
+    $ ./bin/phpunit
     ...
 
     OK (10 tests, 20 assertions)
@@ -95,7 +96,7 @@ done!
 .. sidebar:: Using the Weak Deprecations Mode
 
     Sometimes, you can't fix all deprecations (e.g. something was deprecated
-    in 2.8 and you still need to support 2.7). In these cases, you can still
+    in 3.4 and you still need to support 3.3). In these cases, you can still
     use the bridge to fix as many deprecations as possible and then switch
     to the weak test mode to make your tests pass again. You can do this by
     using the ``SYMFONY_DEPRECATIONS_HELPER`` env variable:
@@ -127,14 +128,14 @@ Composer by modifying your ``composer.json`` file:
         "...": "...",
 
         "require": {
-            "symfony/symfony": "3.0.*",
+            "symfony/symfony": "^4.1",
         },
         "...": "..."
     }
 
 Next, use Composer to download new versions of the libraries:
 
-.. code-block:: bash
+.. code-block:: terminal
 
     $ composer update symfony/symfony
 
@@ -147,8 +148,16 @@ Next, use Composer to download new versions of the libraries:
 3) Update your Code to Work with the New Version
 ------------------------------------------------
 
-There is a good chance that you're done now! However, the next major version
-*may* also contain new BC breaks as a BC layer is not always a possibility.
-Make sure you read the ``UPGRADE-X.0.md`` (where X is the new major version)
-included in the Symfony repository for any BC break that you need to be aware
+The next major version *may* also contain new BC breaks as a BC layer is not always
+a possibility. Make sure you read the ``UPGRADE-X.0.md`` (where X is the new major
+version) included in the Symfony repository for any BC break that you need to be aware
 of.
+
+4) Updating to the Symfony 4 Flex Directory Structure
+-----------------------------------------------------
+
+When upgrading to Symfony 4, you will probably also want to upgrade to the new
+Symfony 4 directory structure so that you can take advantage of Symfony Flex.
+This takes some work, but is optional. For details, see :ref:`upgrade-to-flex`.
+
+.. _`Symfony-Upgrade-Fixer`: https://github.com/umpirsky/Symfony-Upgrade-Fixer

@@ -6,7 +6,7 @@ How to Test Code that Interacts with the Database
 
 If your code interacts with the database, e.g. reads data from or stores data
 into it, you need to adjust your tests to take this into account. There are
-many ways how to deal with this. In a unit test, you can create a mock for
+many ways to deal with this. In a unit test, you can create a mock for
 a ``Repository`` and use it to return expected objects. In a functional test,
 you may need to prepare a test database with predefined values to ensure that
 your test always has the same data to work with.
@@ -14,6 +14,14 @@ your test always has the same data to work with.
 .. note::
 
     If you want to test your queries directly, see :doc:`/testing/doctrine`.
+
+.. tip::
+
+    A popular technique to improve the performance of tests that interact with
+    the database is to begin a transaction before every test and roll it back
+    after the test has finished. This makes it unnecessary to recreate the
+    database or reload fixtures before every test. A community bundle called
+    `DoctrineTestBundle`_ provides this feature.
 
 Mocking the ``Repository`` in a Unit Test
 -----------------------------------------
@@ -33,73 +41,68 @@ class.
 
 Suppose the class you want to test looks like this::
 
-    // src/AppBundle/Salary/SalaryCalculator.php
-    namespace AppBundle\Salary;
+    // src/Salary/SalaryCalculator.php
+    namespace App\Salary;
 
+    use App\Entity\Employee;
     use Doctrine\Common\Persistence\ObjectManager;
 
     class SalaryCalculator
     {
-        private $entityManager;
+        private $objectManager;
 
-        public function __construct(ObjectManager $entityManager)
+        public function __construct(ObjectManager $objectManager)
         {
-            $this->entityManager = $entityManager;
+            $this->objectManager = $objectManager;
         }
 
         public function calculateTotalSalary($id)
         {
-            $employeeRepository = $this->entityManager
-                ->getRepository('AppBundle:Employee');
+            $employeeRepository = $this->objectManager
+                ->getRepository(Employee::class);
             $employee = $employeeRepository->find($id);
 
             return $employee->getSalary() + $employee->getBonus();
         }
     }
 
-Since the ``ObjectManager`` gets injected into the class through the constructor,
+Since the ``EntityManagerInterface`` gets injected into the class through the constructor,
 it's easy to pass a mock object within a test::
 
-    // tests/AppBundle/Salary/SalaryCalculatorTest.php
-    namespace Tests\AppBundle\Salary;
+    // tests/Salary/SalaryCalculatorTest.php
+    namespace App\Tests\Salary;
 
-    use AppBundle\Salary\SalaryCalculator;
-    use AppBundle\Entity\Employee;
-    use Doctrine\ORM\EntityRepository;
+    use App\Entity\Employee;
+    use App\Salary\SalaryCalculator;
     use Doctrine\Common\Persistence\ObjectManager;
+    use Doctrine\Common\Persistence\ObjectRepository;
+    use PHPUnit\Framework\TestCase;
 
-    class SalaryCalculatorTest extends \PHPUnit_Framework_TestCase
+    class SalaryCalculatorTest extends TestCase
     {
         public function testCalculateTotalSalary()
         {
-            // First, mock the object to be used in the test
-            $employee = $this->getMock(Employee::class);
-            $employee->expects($this->once())
-                ->method('getSalary')
-                ->will($this->returnValue(1000));
-            $employee->expects($this->once())
-                ->method('getBonus')
-                ->will($this->returnValue(1100));
+            $employee = new Employee();
+            $employee->setSalary(1000);
+            $employee->setBonus(1100);
 
             // Now, mock the repository so it returns the mock of the employee
-            $employeeRepository = $this
-                ->getMockBuilder(EntityRepository::class)
-                ->disableOriginalConstructor()
-                ->getMock();
-            $employeeRepository->expects($this->once())
+            $employeeRepository = $this->createMock(ObjectRepository::class);
+            // use getMock() on PHPUnit 5.3 or below
+            // $employeeRepository = $this->getMock(ObjectRepository::class);
+            $employeeRepository->expects($this->any())
                 ->method('find')
-                ->will($this->returnValue($employee));
+                ->willReturn($employee);
 
             // Last, mock the EntityManager to return the mock of the repository
-            $entityManager = $this
-                ->getMockBuilder(ObjectManager::class)
-                ->disableOriginalConstructor()
-                ->getMock();
-            $entityManager->expects($this->once())
+            $objectManager = $this->createMock(ObjectManager::class);
+            // use getMock() on PHPUnit 5.3 or below
+            // $objectManager = $this->getMock(ObjectManager::class);
+            $objectManager->expects($this->any())
                 ->method('getRepository')
-                ->will($this->returnValue($employeeRepository));
+                ->willReturn($employeeRepository);
 
-            $salaryCalculator = new SalaryCalculator($entityManager);
+            $salaryCalculator = new SalaryCalculator($objectManager);
             $this->assertEquals(2100, $salaryCalculator->calculateTotalSalary(1));
         }
     }
@@ -117,45 +120,18 @@ Most of the time you want to use a dedicated database connection to make sure
 not to overwrite data you entered when developing the application and also
 to be able to clear the database before every test.
 
-To do this, you can specify a database configuration which overwrites the default
-configuration:
+To do this, you can override the value of the ``DATABASE_URL`` env var in the
+``phpunit.xml.dist`` to use a different database for your tests:
 
-.. configuration-block::
+.. code-block:: xml
 
-    .. code-block:: yaml
+    <?xml version="1.0" charset="utf-8" ?>
+    <phpunit>
+        <php>
+            <!-- the value is the Doctrine connection string in DSN format -->
+            <env name="DATABASE_URL" value="mysql://USERNAME:PASSWORD@127.0.0.1/DB_NAME" />
+        </php>
+        <!-- ... -->
+    </phpunit>
 
-        # app/config/config_test.yml
-        doctrine:
-            # ...
-            dbal:
-                host:     localhost
-                dbname:   testdb
-                user:     testdb
-                password: testdb
-
-    .. code-block:: xml
-
-        <!-- app/config/config_test.xml -->
-        <doctrine:config>
-            <doctrine:dbal
-                host="localhost"
-                dbname="testdb"
-                user="testdb"
-                password="testdb"
-            />
-        </doctrine:config>
-
-    .. code-block:: php
-
-        // app/config/config_test.php
-        $configuration->loadFromExtension('doctrine', array(
-            'dbal' => array(
-                'host'     => 'localhost',
-                'dbname'   => 'testdb',
-                'user'     => 'testdb',
-                'password' => 'testdb',
-            ),
-        ));
-
-Make sure that your database runs on localhost and has the defined database and
-user credentials set up.
+.. _`DoctrineTestBundle`: https://github.com/dmaicher/doctrine-test-bundle

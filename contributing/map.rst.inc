@@ -1,3 +1,10 @@
+* **Code of Conduct**
+
+  * :doc:`/contributing/code_of_conduct/code_of_conduct`
+  * :doc:`/contributing/code_of_conduct/reporting_guidelines`
+  * :doc:`/contributing/code_of_conduct/care_team`
+  * :doc:`/contributing/code_of_conduct/concrete_example_document`
+
 * **Code**
 
   * :doc:`Bugs </contributing/code/bugs>`
@@ -7,7 +14,7 @@
   * :doc:`The Core Team </contributing/code/core_team>`
   * :doc:`Security </contributing/code/security>`
   * :doc:`Tests </contributing/code/tests>`
-  * :doc:`Backwards Compatibility </contributing/code/bc>`
+  * :doc:`Backward Compatibility </contributing/code/bc>`
   * :doc:`Coding Standards</contributing/code/standards>`
   * :doc:`Code Conventions</contributing/code/conventions>`
   * :doc:`Git</contributing/code/git>`
@@ -23,5 +30,6 @@
 * **Community**
 
   * :doc:`Release Process </contributing/community/releases>`
+  * :doc:`Respectful Review comments </contributing/community/review-comments>`
   * :doc:`Community Reviews </contributing/community/reviews>`
   * :doc:`Other Resources </contributing/community/other>`

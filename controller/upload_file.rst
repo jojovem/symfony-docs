@@ -15,8 +15,8 @@ Imagine that you have a ``Product`` entity in your application and you want to
 add a PDF brochure for each product. To do so, add a new property called ``brochure``
 in the ``Product`` entity::
 
-    // src/AppBundle/Entity/Product.php
-    namespace AppBundle\Entity;
+    // src/Entity/Product.php
+    namespace App\Entity;
 
     use Doctrine\ORM\Mapping as ORM;
     use Symfony\Component\Validator\Constraints as Assert;
@@ -51,9 +51,10 @@ or ``blob`` because it just stores the PDF file name instead of the file content
 
 Then, add a new ``brochure`` field to the form that manages the ``Product`` entity::
 
-    // src/AppBundle/Form/ProductType.php
-    namespace AppBundle\Form;
+    // src/Form/ProductType.php
+    namespace App\Form;
 
+    use App\Entity\Product;
     use Symfony\Component\Form\AbstractType;
     use Symfony\Component\Form\FormBuilderInterface;
     use Symfony\Component\OptionsResolver\OptionsResolver;
@@ -73,7 +74,7 @@ Then, add a new ``brochure`` field to the form that manages the ``Product`` enti
         public function configureOptions(OptionsResolver $resolver)
         {
             $resolver->setDefaults(array(
-                'data_class' => 'AppBundle\Entity\Product',
+                'data_class' => Product::class,
             ));
         }
     }
@@ -82,45 +83,35 @@ Now, update the template that renders the form to display the new ``brochure``
 field (the exact template code to add depends on the method used by your application
 to :doc:`customize form rendering </form/form_customization>`):
 
-.. configuration-block::
+.. code-block:: html+twig
 
-    .. code-block:: html+twig
+    {# templates/product/new.html.twig #}
+    <h1>Adding a new product</h1>
 
-        {# app/Resources/views/product/new.html.twig #}
-        <h1>Adding a new product</h1>
+    {{ form_start(form) }}
+        {# ... #}
 
-        {{ form_start(form) }}
-            {# ... #}
-
-            {{ form_row(form.brochure) }}
-        {{ form_end(form) }}
-
-    .. code-block:: html+php
-
-        <!-- app/Resources/views/product/new.html.twig -->
-        <h1>Adding a new product</h1>
-
-        <?php echo $view['form']->start($form) ?>
-            <?php echo $view['form']->row($form['brochure']) ?>
-        <?php echo $view['form']->end($form) ?>
+        {{ form_row(form.brochure) }}
+    {{ form_end(form) }}
 
 Finally, you need to update the code of the controller that handles the form::
 
-    // src/AppBundle/Controller/ProductController.php
-    namespace AppBundle\ProductController;
+    // src/Controller/ProductController.php
+    namespace App\Controller;
 
-    use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
-    use Symfony\Bundle\FrameworkBundle\Controller\Controller;
+    use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+    use Symfony\Component\HttpFoundation\File\Exception\FileException;
     use Symfony\Component\HttpFoundation\Request;
-    use AppBundle\Entity\Product;
-    use AppBundle\Form\ProductType;
+    use Symfony\Component\Routing\Annotation\Route;
+    use App\Entity\Product;
+    use App\Form\ProductType;
 
-    class ProductController extends Controller
+    class ProductController extends AbstractController
     {
         /**
          * @Route("/product/new", name="app_product_new")
          */
-        public function newAction(Request $request)
+        public function new(Request $request)
         {
             $product = new Product();
             $form = $this->createForm(ProductType::class, $product);
@@ -131,16 +122,19 @@ Finally, you need to update the code of the controller that handles the form::
                 /** @var Symfony\Component\HttpFoundation\File\UploadedFile $file */
                 $file = $product->getBrochure();
 
-                // Generate a unique name for the file before saving it
-                $fileName = md5(uniqid()).'.'.$file->guessExtension();
+                $fileName = $this->generateUniqueFileName().'.'.$file->guessExtension();
 
                 // Move the file to the directory where brochures are stored
-                $file->move(
-                    $this->getParameter('brochures_directory'),
-                    $fileName
-                );
+                try {
+                    $file->move(
+                        $this->getParameter('brochures_directory'),
+                        $fileName
+                    );
+                } catch (FileException $e) {
+                    // ... handle exception if something happens during file upload
+                }
 
-                // Update the 'brochure' property to store the PDF file name
+                // updates the 'brochure' property to store the PDF file name
                 // instead of its contents
                 $product->setBrochure($fileName);
 
@@ -153,6 +147,16 @@ Finally, you need to update the code of the controller that handles the form::
                 'form' => $form->createView(),
             ));
         }
+
+        /**
+         * @return string
+         */
+        private function generateUniqueFileName()
+        {
+            // md5() reduces the similarity of the file names generated by
+            // uniqid(), which is based on timestamps
+            return md5(uniqid());
+        }
     }
 
 Now, create the ``brochures_directory`` parameter that was used in the
@@ -160,11 +164,11 @@ controller to specify the directory in which the brochures should be stored:
 
 .. code-block:: yaml
 
-    # app/config/config.yml
+    # config/services.yaml
 
     # ...
     parameters:
-        brochures_directory: '%kernel.root_dir%/../web/uploads/brochures'
+        brochures_directory: '%kernel.project_dir%/public/uploads/brochures'
 
 There are some important things to consider in the code of the above controller:
 
@@ -185,19 +189,16 @@ There are some important things to consider in the code of the above controller:
    use the :method:`Symfony\\Component\\HttpFoundation\\File\\UploadedFile::guessExtension`
    method to let Symfony guess the right extension according to the file MIME type;
 
+.. versionadded:: 4.1
+    The :method:`Symfony\\Component\\HttpFoundation\\File\\UploadedFile::getClientSize`
+    method was deprecated in Symfony 4.1 and will be removed in Symfony 5.0.
+    Use ``getSize()`` instead.
+
 You can use the following code to link to the PDF brochure of a product:
 
-.. configuration-block::
+.. code-block:: html+twig
 
-    .. code-block:: html+twig
-
-        <a href="{{ asset('uploads/brochures/' ~ product.brochure) }}">View brochure (PDF)</a>
-
-    .. code-block:: html+php
-
-        <a href="<?php echo $view['assets']->getUrl('uploads/brochures/'.$product->getBrochure()) ?>">
-            View brochure (PDF)
-        </a>
+    <a href="{{ asset('uploads/brochures/' ~ product.brochure) }}">View brochure (PDF)</a>
 
 .. tip::
 
@@ -220,29 +221,54 @@ Creating an Uploader Service
 To avoid logic in controllers, making them big, you can extract the upload
 logic to a separate service::
 
-    // src/AppBundle/FileUploader.php
-    namespace AppBundle;
+    // src/Service/FileUploader.php
+    namespace App\Service;
 
+    use Symfony\Component\HttpFoundation\File\Exception\FileException;
     use Symfony\Component\HttpFoundation\File\UploadedFile;
 
     class FileUploader
     {
-        private $targetDir;
+        private $targetDirectory;
 
-        public function __construct($targetDir)
+        public function __construct($targetDirectory)
         {
-            $this->targetDir = $targetDir;
+            $this->targetDirectory = $targetDirectory;
         }
 
         public function upload(UploadedFile $file)
         {
             $fileName = md5(uniqid()).'.'.$file->guessExtension();
 
-            $file->move($this->targetDir, $fileName);
+            try {
+                $file->move($this->getTargetDirectory(), $fileName);
+            } catch (FileException $e) {
+                // ... handle exception if something happens during file upload
+            }
 
             return $fileName;
         }
+
+        public function getTargetDirectory()
+        {
+            return $this->targetDirectory;
+        }
     }
+
+.. tip::
+
+    In addition to the generic :class:`Symfony\\Component\\HttpFoundation\\File\\Exception\\FileException`
+    class there are other exception classes to handle failed file uploads:
+    :class:`Symfony\\Component\\HttpFoundation\\File\\Exception\\CannotWriteFileException`,
+    :class:`Symfony\\Component\\HttpFoundation\\File\\Exception\\ExtensionFileException`,
+    :class:`Symfony\\Component\\HttpFoundation\\File\\Exception\\FormSizeFileException`,
+    :class:`Symfony\\Component\\HttpFoundation\\File\\Exception\\IniSizeFileException`,
+    :class:`Symfony\\Component\\HttpFoundation\\File\\Exception\\NoFileException`,
+    :class:`Symfony\\Component\\HttpFoundation\\File\\Exception\\NoTmpDirFileException`,
+    and :class:`Symfony\\Component\\HttpFoundation\\File\\Exception\\PartialFileException`.
+
+    .. versionadded:: 4.1
+        The detailed exception classes were introduced in Symfony 4.1.
 
 Then, define a service for this class:
 
@@ -250,52 +276,51 @@ Then, define a service for this class:
 
     .. code-block:: yaml
 
-        # app/config/services.yml
+        # config/services.yaml
         services:
             # ...
-            app.brochure_uploader:
-                class: AppBundle\FileUploader
-                arguments: ['%brochures_directory%']
+
+            App\Service\FileUploader:
+                arguments:
+                    $targetDirectory: '%brochures_directory%'
 
     .. code-block:: xml
 
-        <!-- app/config/config.xml -->
+        <!-- config/services.xml -->
         <?xml version="1.0" encoding="UTF-8" ?>
         <container xmlns="http://symfony.com/schema/dic/services"
             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
             xsi:schemaLocation="http://symfony.com/schema/dic/services
-            http://symfony.com/schema/dic/services/services-1.0.xsd"
-        >
+                http://symfony.com/schema/dic/services/services-1.0.xsd">
             <!-- ... -->
 
-            <service id="app.brochure_uploader" class="AppBundle\FileUploader">
+            <service id="App\FileUploader">
                 <argument>%brochures_directory%</argument>
             </service>
         </container>
 
     .. code-block:: php
 
-        // app/config/services.php
-        use Symfony\Component\DependencyInjection\Definition;
+        // config/services.php
+        use App\Service\FileUploader;
 
-        // ...
-        $container->setDefinition('app.brochure_uploader', new Definition(
-            'AppBundle\FileUploader',
-            array('%brochures_directory%')
-        ));
+        $container->autowire(FileUploader::class)
+            ->setArgument('$targetDirectory', '%brochures_directory%');
 
 Now you're ready to use this service in the controller::
 
-    // src/AppBundle/Controller/ProductController.php
+    // src/Controller/ProductController.php
+    use Symfony\Component\HttpFoundation\Request;
+    use App\Service\FileUploader;
 
     // ...
-    public function newAction(Request $request)
+    public function new(Request $request, FileUploader $fileUploader)
     {
         // ...
 
-        if ($form->isValid()) {
+        if ($form->isSubmitted() && $form->isValid()) {
             $file = $product->getBrochure();
-            $fileName = $this->get('app.brochure_uploader')->upload($file);
+            $fileName = $fileUploader->upload($file);
 
             $product->setBrochure($fileName);
 
@@ -312,14 +337,15 @@ If you are using Doctrine to store the Product entity, you can create a
 :doc:`Doctrine listener </doctrine/event_listeners_subscribers>` to
 automatically upload the file when persisting the entity::
 
-    // src/AppBundle/EventListener/BrochureUploadListener.php
-    namespace AppBundle\EventListener;
+    // src/EventListener/BrochureUploadListener.php
+    namespace App\EventListener;
 
     use Symfony\Component\HttpFoundation\File\UploadedFile;
+    use Symfony\Component\HttpFoundation\File\File;
     use Doctrine\ORM\Event\LifecycleEventArgs;
     use Doctrine\ORM\Event\PreUpdateEventArgs;
-    use AppBundle\Entity\Product;
-    use AppBundle\FileUploader;
+    use App\Entity\Product;
+    use App\Service\FileUploader;
 
     class BrochureUploadListener
     {
@@ -354,12 +380,14 @@ automatically upload the file when persisting the entity::
             $file = $entity->getBrochure();
 
             // only upload new files
-            if (!$file instanceof UploadedFile) {
-                return;
+            if ($file instanceof UploadedFile) {
+                $fileName = $this->uploader->upload($file);
+                $entity->setBrochure($fileName);
+            } elseif ($file instanceof File) {
+                // prevents the full file path being saved on updates
+                // as the path is set on the postLoad listener
+                $entity->setBrochure($file->getFilename());
             }
-
-            $fileName = $this->uploader->upload($file);
-            $entity->setBrochure($fileName);
         }
     }
 
@@ -369,54 +397,52 @@ Now, register this class as a Doctrine listener:
 
     .. code-block:: yaml
 
-        # app/config/services.yml
+        # config/services.yaml
         services:
+            _defaults:
+                # ... be sure autowiring is enabled
+                autowire: true
             # ...
-            app.doctrine_brochure_listener:
-                class: AppBundle\EventListener\BrochureUploadListener
-                arguments: ['@app.brochure_uploader']
+
+            App\EventListener\BrochureUploadListener:
                 tags:
                     - { name: doctrine.event_listener, event: prePersist }
                     - { name: doctrine.event_listener, event: preUpdate }
 
     .. code-block:: xml
 
-        <!-- app/config/config.xml -->
+        <!-- config/services.xml -->
         <?xml version="1.0" encoding="UTF-8" ?>
         <container xmlns="http://symfony.com/schema/dic/services"
             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
             xsi:schemaLocation="http://symfony.com/schema/dic/services
-            http://symfony.com/schema/dic/services/services-1.0.xsd"
-        >
-            <!-- ... -->
+                http://symfony.com/schema/dic/services/services-1.0.xsd">
 
-            <service id="app.doctrine_brochure_listener"
-                class="AppBundle\EventListener\BrochureUploaderListener"
-            >
-                <argument type="service" id="app.brochure_uploader"/>
+            <services>
+                <!-- ... be sure autowiring is enabled -->
+                <defaults autowire="true" />
+                <!-- ... -->
 
-                <tag name="doctrine.event_listener" event="prePersist"/>
-                <tag name="doctrine.event_listener" event="preUpdate"/>
-            </service>
+                <service id="App\EventListener\BrochureUploaderListener">
+                    <tag name="doctrine.event_listener" event="prePersist"/>
+                    <tag name="doctrine.event_listener" event="preUpdate"/>
+                </service>
+            </services>
         </container>
 
     .. code-block:: php
 
-        // app/config/services.php
-        use Symfony\Component\DependencyInjection\Reference;
+        // config/services.php
+        use App\EventListener\BrochureUploaderListener;
 
-        // ...
-        $definition = new Definition(
-            'AppBundle\EventListener\BrochureUploaderListener',
-            array(new Reference('brochures_directory'))
-        );
-        $definition->addTag('doctrine.event_listener', array(
-            'event' => 'prePersist',
-        ));
-        $definition->addTag('doctrine.event_listener', array(
-            'event' => 'preUpdate',
-        ));
-        $container->setDefinition('app.doctrine_brochure_listener', $definition);
+        $container->autowire(BrochureUploaderListener::class)
+            ->addTag('doctrine.event_listener', array(
+                'event' => 'prePersist',
+            ))
+            ->addTag('doctrine.event_listener', array(
+                'event' => 'preUpdate',
+            ))
+        ;
 
 This listener is now automatically executed when persisting a new Product
 entity. This way, you can remove everything related to uploading from the
@@ -439,9 +465,13 @@ controller.
             {
                 $entity = $args->getEntity();
 
-                $fileName = $entity->getBrochure();
+                if (!$entity instanceof Product) {
+                    return;
+                }
 
-                $entity->setBrochure(new File($this->targetPath.'/'.$fileName));
+                if ($fileName = $entity->getBrochure()) {
+                    $entity->setBrochure(new File($this->uploader->getTargetDirectory().'/'.$fileName));
+                }
             }
         }
 

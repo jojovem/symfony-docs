@@ -1,8 +1,8 @@
 Documentation Format
 ====================
 
-The Symfony documentation uses reStructuredText_ as its markup language and
-Sphinx_ for generating the documentation in the formats read by the end users,
+The Symfony documentation uses `reStructuredText`_ as its markup language and
+`Sphinx`_ for generating the documentation in the formats read by the end users,
 such as HTML and PDF.
 
 reStructuredText
@@ -27,7 +27,7 @@ tutorial and the `reStructuredText Reference`_.
 Sphinx
 ------
 
-Sphinx is a build system that provides tools to create documentation from
+Sphinx_ is a build system that provides tools to create documentation from
 reStructuredText documents. As such, it adds new directives and interpreted text
 roles to the standard reST markup. Read more about the `Sphinx Markup Constructs`_.
 
@@ -178,7 +178,7 @@ Symfony, you should precede your description of the change with a
 .. code-block:: rst
 
     .. versionadded:: 2.7
-        The ``askHiddenResponse`` method was introduced in Symfony 2.7.
+        The ``askHiddenResponse()`` method was introduced in Symfony 2.7.
 
     You can also ask a question and hide the response. This is particularly [...]
 
@@ -195,22 +195,8 @@ Whenever a new minor version of Symfony is released (e.g. 2.4, 2.5, etc),
 a new branch of the documentation is created from the ``master`` branch.
 At this point, all the ``versionadded`` tags for Symfony versions that have
 reached end-of-maintenance will be removed. For example, if Symfony 2.5 were
-released today, and 2.2 had recently reached its end-of-life, the 2.2 ``versionadded``
-tags would be removed from the new ``2.5`` branch.
-
-Testing Documentation
-~~~~~~~~~~~~~~~~~~~~~
-
-When submitting a new content to the documentation repository or when changing
-any existing resource, an automatic process will check if your documentation is
-free of syntax errors and is ready to be reviewed.
-
-Nevertheless, if you prefer to do this check locally on your own machine before
-submitting your documentation, follow these steps:
-
-* Install Sphinx_;
-* Install the Sphinx extensions using git submodules: ``$ git submodule update --init``;
-* Run ``make html`` and view the generated HTML in the ``_build/html`` directory.
+released today, and 2.2 had recently reached its end-of-maintenance, the 2.2
+``versionadded`` tags would be removed from the new ``2.5`` branch.
 
 .. _reStructuredText: http://docutils.sourceforge.net/rst.html
 .. _Sphinx: http://sphinx-doc.org/

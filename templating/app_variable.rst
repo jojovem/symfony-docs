@@ -6,7 +6,7 @@ How to Access the User, Request, Session & more in Twig via the ``app`` Variable
 
 During each request, Symfony will set a global template variable ``app``
 in both Twig and PHP template engines by default. The ``app`` variable
-is a :class:`Symfony\\Bundle\\FrameworkBundle\\Templating\\GlobalVariables`
+is a :class:`Symfony\\Bridge\\Twig\\AppVariable`
 instance which will give you access to some application specific variables
 automatically:
 
@@ -27,23 +27,13 @@ automatically:
 ``app.debug``
     True if in debug mode. False otherwise.
 
-.. configuration-block::
+.. code-block:: html+twig
 
-    .. code-block:: html+twig
-
-        <p>Username: {{ app.user.username }}</p>
-        {% if app.debug %}
-            <p>Request method: {{ app.request.method }}</p>
-            <p>Application Environment: {{ app.environment }}</p>
-        {% endif %}
-
-    .. code-block:: html+php
-
-        <p>Username: <?php echo $app->getUser()->getUsername() ?></p>
-        <?php if ($app->getDebug()): ?>
-            <p>Request method: <?php echo $app->getRequest()->getMethod() ?></p>
-            <p>Application Environment: <?php echo $app->getEnvironment() ?></p>
-        <?php endif ?>
+    <p>Username: {{ app.user.username }}</p>
+    {% if app.debug %}
+        <p>Request method: {{ app.request.method }}</p>
+        <p>Application Environment: {{ app.environment }}</p>
+    {% endif %}
 
 .. tip::
 

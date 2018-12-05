@@ -22,14 +22,14 @@ answer.
 Consider the real-world example where you want to provide a plugin system
 for your project. A plugin should be able to add methods, or do something
 before or after a method is executed, without interfering with other plugins.
-This is not an easy problem to solve with single inheritance, and even if 
+This is not an easy problem to solve with single inheritance, and even if
 multiple inheritance was possible with PHP, it comes with its own drawbacks.
 
-The Symfony EventDispatcher component implements the `Mediator`_ pattern
-in a simple and effective way to make all these things possible and to make
-your projects truly extensible.
+The Symfony EventDispatcher component implements the `Mediator`_ and `Observer`_
+design patterns to make all these things possible and to make your projects
+truly extensible.
 
-Take a simple example from :doc:`the HttpKernel component </components/http_kernel>`.
+Take an example from :doc:`the HttpKernel component </components/http_kernel>`.
 Once a ``Response`` object has been created, it may be useful to allow other
 elements in the system to modify it (e.g. add some cache headers) before
 it's actually used. To make this possible, the Symfony kernel throws an
@@ -52,16 +52,22 @@ event - ``kernel.response``. Here's how it works:
 Installation
 ------------
 
-You can install the component in 2 different ways:
+.. code-block:: terminal
 
-* :doc:`Install it via Composer </components/using_components>`
-  (``symfony/event-dispatcher`` on `Packagist`_);
-* Use the official Git repository (https://github.com/symfony/event-dispatcher).
+    $ composer require symfony/event-dispatcher
+
+Alternatively, you can clone the `<https://github.com/symfony/event-dispatcher>`_ repository.
 
 .. include:: /components/require_autoload.rst.inc
 
 Usage
 -----
+
+.. seealso::
+
+    This article explains how to use the EventDispatcher features as an
+    independent component in any PHP application. Read the :doc:`/event_dispatcher`
+    article to learn about how to use it in Symfony applications.
 
 Events
 ~~~~~~
@@ -78,7 +84,7 @@ object itself often contains data about the event being dispatched.
 Naming Conventions
 ..................
 
-The unique event name can be any string, but optionally follows a few simple
+The unique event name can be any string, but optionally follows a few
 naming conventions:
 
 * Use only lowercase letters, numbers, dots (``.``) and underscores (``_``);
@@ -93,8 +99,7 @@ Event Names and Event Objects
 .............................
 
 When the dispatcher notifies listeners, it passes an actual ``Event`` object
-to those listeners. The base ``Event`` class is very simple: it
-contains a method for stopping
+to those listeners. The base ``Event`` class contains a method for stopping
 :ref:`event propagation <event_dispatcher-event-propagation>`, but not much
 else.
 
@@ -135,24 +140,23 @@ A call to the dispatcher's ``addListener()`` method associates any valid
 PHP callable to an event::
 
     $listener = new AcmeListener();
-    $dispatcher->addListener('acme.action', array($listener, 'onFooAction'));
+    $dispatcher->addListener('acme.foo.action', array($listener, 'onFooAction'));
 
 The ``addListener()`` method takes up to three arguments:
 
 #. The event name (string) that this listener wants to listen to;
 #. A PHP callable that will be executed when the specified event is dispatched;
-#. An optional priority integer (higher equals more important and therefore
-   that the listener will be triggered earlier) that determines when a listener
-   is triggered versus other listeners (defaults to ``0``). If two listeners
-   have the same priority, they are executed in the order that they were
-   added to the dispatcher.
+#. An optional priority, defined as a positive or negative integer (defaults to
+   ``0``). The higher the number, the earlier the listener is called. If two
+   listeners have the same priority, they are executed in the order that they
+   were added to the dispatcher.
 
 .. note::
 
     A `PHP callable`_ is a PHP variable that can be used by the
     ``call_user_func()`` function and returns ``true`` when passed to the
     ``is_callable()`` function. It can be a ``\Closure`` instance, an object
-    implementing an ``__invoke`` method (which is what closures are in fact),
+    implementing an ``__invoke()`` method (which is what closures are in fact),
     a string representing a function or an array representing an object
     method or a class method.
 
@@ -161,12 +165,12 @@ The ``addListener()`` method takes up to three arguments:
 
         use Symfony\Component\EventDispatcher\Event;
 
-        $dispatcher->addListener('foo.action', function (Event $event) {
-            // will be executed when the foo.action event is dispatched
+        $dispatcher->addListener('acme.foo.action', function (Event $event) {
+            // will be executed when the acme.foo.action event is dispatched
         });
 
 Once a listener is registered with the dispatcher, it waits until the event
-is notified. In the above example, when the ``foo.action`` event is dispatched,
+is notified. In the above example, when the ``acme.foo.action`` event is dispatched,
 the dispatcher calls the ``AcmeListener::onFooAction()`` method and passes
 the ``Event`` object as the single argument::
 
@@ -182,48 +186,41 @@ the ``Event`` object as the single argument::
         }
     }
 
-The ``$event`` argument is the event class that was passed when dispatching the
+The ``$event`` argument is the event object that was passed when dispatching the
 event. In many cases, a special event subclass is passed with extra
 information. You can check the documentation or implementation of each event to
 determine which instance is passed.
 
-.. sidebar:: Registering Event Listeners in the Service Container
+.. sidebar:: Registering Event Listeners and Subscribers in the Service Container
 
-    When you are using the
-    :class:`Symfony\\Component\\EventDispatcher\\ContainerAwareEventDispatcher`
-    and the
-    :doc:`DependencyInjection component </components/dependency_injection>`,
-    you can use the
-    :class:`Symfony\\Component\\EventDispatcher\\DependencyInjection\\RegisterListenersPass`
-    to tag services as event listeners::
+    Registering service definitions and tagging them with the
+    ``kernel.event_listener`` and ``kernel.event_subscriber`` tags is not enough
+    to enable the event listeners and event subscribers. You must also register
+    a compiler pass called ``RegisterListenersPass()`` in the container builder::
 
         use Symfony\Component\DependencyInjection\ContainerBuilder;
-        use Symfony\Component\DependencyInjection\Definition;
         use Symfony\Component\DependencyInjection\ParameterBag\ParameterBag;
         use Symfony\Component\DependencyInjection\Reference;
+        use Symfony\Component\EventDispatcher\EventDispatcher;
         use Symfony\Component\EventDispatcher\DependencyInjection\RegisterListenersPass;
 
         $containerBuilder = new ContainerBuilder(new ParameterBag());
+        // register the compiler pass that handles the 'kernel.event_listener'
+        // and 'kernel.event_subscriber' service tags
         $containerBuilder->addCompilerPass(new RegisterListenersPass());
 
-        // register the event dispatcher service
-        $containerBuilder->setDefinition('event_dispatcher', new Definition(
-            'Symfony\Component\EventDispatcher\ContainerAwareEventDispatcher',
-            array(new Reference('service_container'))
-        ));
+        $containerBuilder->register('event_dispatcher', EventDispatcher::class);
 
-        // register your event listener service
-        $listener = new Definition('AcmeListener');
-        $listener->addTag('kernel.event_listener', array(
-            'event' => 'foo.action',
-            'method' => 'onFooAction',
-        ));
-        $containerBuilder->setDefinition('listener_service_id', $listener);
+        // registers an event listener
+        $containerBuilder->register('listener_service_id', \AcmeListener::class)
+            ->addTag('kernel.event_listener', array(
+                'event' => 'acme.foo.action',
+                'method' => 'onFooAction',
+            ));
 
-        // register an event subscriber
-        $subscriber = new Definition('AcmeSubscriber');
-        $subscriber->addTag('kernel.event_subscriber');
-        $containerBuilder->setDefinition('subscriber_service_id', $subscriber);
+        // registers an event subscriber
+        $containerBuilder->register('subscriber_service_id', \AcmeSubscriber::class)
+            ->addTag('kernel.event_subscriber');
 
     By default, the listeners pass assumes that the event dispatcher's service
     id is ``event_dispatcher``, that event listeners are tagged with the
@@ -306,7 +303,7 @@ each listener of that event::
     $order = new Order();
     // ...
 
-    // create the OrderPlacedEvent and dispatch it
+    // creates the OrderPlacedEvent and dispatches it
     $event = new OrderPlacedEvent($order);
     $dispatcher->dispatch(OrderPlacedEvent::NAME, $event);
 
@@ -386,10 +383,12 @@ method::
 The dispatcher will automatically register the subscriber for each event
 returned by the ``getSubscribedEvents()`` method. This method returns an array
 indexed by event names and whose values are either the method name to call
-or an array composed of the method name to call and a priority. The example
-above shows how to register several listener methods for the same event
-in subscriber and also shows how to pass the priority of each listener method.
-The higher the priority, the earlier the method is called. In the above
+or an array composed of the method name to call and a priority (a positive or
+negative integer that defaults to ``0``).
+
+The example above shows how to register several listener methods for the same
+event in subscriber and also shows how to pass the priority of each listener
+method. The higher the number, the earlier the method is called. In the above
 example, when the ``kernel.response`` event is triggered, the methods
 ``onKernelResponsePre()`` and ``onKernelResponsePost()`` are called in that
 order.
@@ -409,14 +408,14 @@ the dispatcher to stop all propagation of the event to future listeners
 inside a listener via the
 :method:`Symfony\\Component\\EventDispatcher\\Event::stopPropagation` method::
 
-   use Acme\Store\Event\OrderPlacedEvent;
+    use Acme\Store\Event\OrderPlacedEvent;
 
-   public function onStoreOrder(OrderPlacedEvent $event)
-   {
-       // ...
+    public function onStoreOrder(OrderPlacedEvent $event)
+    {
+        // ...
 
-       $event->stopPropagation();
-   }
+        $event->stopPropagation();
+    }
 
 Now, any listeners to ``order.placed`` that have not yet been called will
 *not* be called.
@@ -440,14 +439,9 @@ EventDispatcher Aware Events and Listeners
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The ``EventDispatcher`` always passes the dispatched event, the event's
-name and a reference to itself to the listeners. This can be used in some
-advanced usages of the ``EventDispatcher`` like dispatching other events
-in listeners, event chaining or even lazy loading of more listeners into
-the dispatcher object as shown in the following examples.
-
-This can lead to some advanced applications of the ``EventDispatcher``
-including dispatching other events inside listeners, chaining events or even
-lazy loading listeners into the dispatcher object.
+name and a reference to itself to the listeners. This can lead to some advanced
+applications of the ``EventDispatcher`` including dispatching other events inside
+listeners, chaining events or even lazy loading listeners into the dispatcher object.
 
 .. index::
    single: EventDispatcher; Dispatcher shortcuts
@@ -457,7 +451,7 @@ lazy loading listeners into the dispatcher object.
 Dispatcher Shortcuts
 ~~~~~~~~~~~~~~~~~~~~
 
-If you do not need a custom event object, you can simply rely on a plain
+If you do not need a custom event object, you can rely on a plain
 :class:`Symfony\\Component\\EventDispatcher\\Event` object. You do not even
 need to pass this to the dispatcher as it will create one by default unless you
 specifically pass one::
@@ -509,8 +503,7 @@ with some other dispatchers:
 
 * :doc:`/components/event_dispatcher/container_aware_dispatcher`
 * :doc:`/components/event_dispatcher/immutable_dispatcher`
-* :doc:`/components/event_dispatcher/traceable_dispatcher` (provided by the
-  :doc:`HttpKernel component </components/http_kernel>`)
+* :doc:`/components/event_dispatcher/traceable_dispatcher`
 
 Learn More
 ----------
@@ -526,6 +519,7 @@ Learn More
 * :ref:`The kernel.event_subscriber tag <dic-tags-kernel-event-subscriber>`
 
 .. _Mediator: https://en.wikipedia.org/wiki/Mediator_pattern
-.. _Closures: http://php.net/manual/en/functions.anonymous.php
-.. _PHP callable: http://www.php.net/manual/en/language.pseudo-types.php#language.types.callback
+.. _Observer: https://en.wikipedia.org/wiki/Observer_pattern
+.. _Closures: https://php.net/manual/en/functions.anonymous.php
+.. _PHP callable: https://php.net/manual/en/language.pseudo-types.php#language.types.callback
 .. _Packagist: https://packagist.org/packages/symfony/event-dispatcher

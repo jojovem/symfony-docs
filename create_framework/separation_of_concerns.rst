@@ -49,9 +49,9 @@ request handling logic into its own ``Simplex\\Framework`` class::
                 $arguments = $this->argumentResolver->getArguments($request, $controller);
 
                 return call_user_func_array($controller, $arguments);
-            } catch (ResourceNotFoundException $e) {
+            } catch (ResourceNotFoundException $exception) {
                 return new Response('Not Found', 404);
-            } catch (\Exception $e) {
+            } catch (\Exception $exception) {
                 return new Response('An error occurred', 500);
             }
         }
@@ -71,7 +71,7 @@ And update ``example.com/web/front.php`` accordingly::
     $controllerResolver = new ControllerResolver();
     $argumentResolver = new ArgumentResolver();
 
-    $framework = new Simplex\Framework($matcher, $controllerResolver, new RequestStack(), $argumentResolver);
+    $framework = new Simplex\Framework($matcher, $controllerResolver, $argumentResolver);
     $response = $framework->handle($request);
 
     $response->send();
@@ -106,10 +106,10 @@ Move the controller to ``Calendar\Controller\LeapYearController``::
 
     class LeapYearController
     {
-        public function indexAction(Request $request, $year)
+        public function index(Request $request, $year)
         {
-            $leapyear = new LeapYear();
-            if ($leapyear->isLeapYear($year)) {
+            $leapYear = new LeapYear();
+            if ($leapYear->isLeapYear($year)) {
                 return new Response('Yep, this is a leap year!');
             }
 
@@ -138,7 +138,7 @@ Don't forget to update the ``example.com/src/app.php`` file accordingly::
 
     $routes->add('leap_year', new Routing\Route('/is_leap_year/{year}', array(
         'year' => null,
-        '_controller' => 'Calendar\\Controller\\LeapYearController::indexAction',
+        '_controller' => 'Calendar\Controller\LeapYearController::indexAction',
     )));
 
 To sum up, here is the new file layout:

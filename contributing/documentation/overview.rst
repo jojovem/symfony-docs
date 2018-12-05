@@ -1,30 +1,16 @@
 Contributing to the Documentation
 =================================
 
-One of the essential principles of the Symfony project is that **documentation
-is as important as code**. That's why a great amount of resources are dedicated
-to documenting new features and to keeping the rest of the documentation
-up-to-date.
-
-More than 1,000 developers all around the world have contributed to Symfony's
-documentation and we are glad that you are considering joining this big family.
-This guide will explain everything you need to contribute to the Symfony
-documentation.
-
 Before Your First Contribution
 ------------------------------
 
-**Before contributing**, you should consider the following:
+**Before contributing**, you need to:
 
-* Symfony documentation is written using `reStructuredText`_ markup language.
-  If you are not familiar with this format, read
-  :doc:`this article </contributing/documentation/format>` for a quick overview
-  of its basic features.
-* Symfony documentation is hosted on `GitHub`_. You'll need a free GitHub user
-  account to contribute to the documentation.
-* Symfony documentation is published under a
-  :doc:`Creative Commons BY-SA 3.0 License </contributing/documentation/license>`
-  and all your contributions will implicitly adhere to that license.
+* Sign up for a free `GitHub`_ account, which is the service where the Symfony
+  documentation is hosted.
+* Be familiar with the `reStructuredText`_ markup language, which is used to
+  write Symfony docs. Read :doc:`this article </contributing/documentation/format>`
+  for a quick overview.
 
 .. _minor-changes-e-g-typos:
 
@@ -87,15 +73,15 @@ contribute to Symfony.
 uses the ``projects/symfony-docs/`` directory to store the documentation; change
 this value accordingly):
 
-.. code-block:: bash
+.. code-block:: terminal
 
     $ cd projects/
-    $ git clone git://github.com/<YOUR GITHUB USERNAME>/symfony-docs.git
+    $ git clone git://github.com/YOUR-GITHUB-USERNAME/symfony-docs.git
 
 **Step 3.** Add the original Symfony docs repository as a "Git remote" executing
 this command:
 
-.. code-block:: bash
+.. code-block:: terminal
 
     $ cd symfony-docs/
     $ git remote add upstream https://github.com/symfony/symfony-docs.git
@@ -103,17 +89,17 @@ this command:
 If things went right, you'll see the following when listing the "remotes" of
 your project:
 
-.. code-block:: bash
+.. code-block:: terminal
 
     $ git remote -v
-    origin  git@github.com:<YOUR GITHUB USERNAME>/symfony-docs.git (fetch)
-    origin  git@github.com:<YOUR GITHUB USERNAME>/symfony-docs.git (push)
+    origin  git@github.com:YOUR-GITHUB-USERNAME/symfony-docs.git (fetch)
+    origin  git@github.com:YOUR-GITHUB-USERNAME/symfony-docs.git (push)
     upstream  https://github.com/symfony/symfony-docs.git (fetch)
     upstream  https://github.com/symfony/symfony-docs.git (push)
 
 Fetch all the commits of the upstream branches by executing this command:
 
-.. code-block:: bash
+.. code-block:: terminal
 
     $ git fetch upstream
 
@@ -124,16 +110,16 @@ Symfony repository and on your own fork. You'll see this in action in a moment.
 memorable name for the new branch (if you are fixing a reported issue, use
 ``fix_XXX`` as the branch name, where ``XXX`` is the number of the issue):
 
-.. code-block:: bash
+.. code-block:: terminal
 
-    $ git checkout -b improve_install_chapter upstream/2.7
+    $ git checkout -b improve_install_article upstream/3.4
 
-In this example, the name of the branch is ``improve_install_chapter`` and the
-``upstream/2.7`` value tells Git to create this branch based on the ``2.7``
+In this example, the name of the branch is ``improve_install_article`` and the
+``upstream/3.4`` value tells Git to create this branch based on the ``3.4``
 branch of the ``upstream`` remote, which is the original Symfony Docs repository.
 
 Fixes should always be based on the **oldest maintained branch** which contains
-the error. Nowadays this is the ``2.7`` branch. If you are instead documenting a
+the error. Nowadays this is the ``3.4`` branch. If you are instead documenting a
 new feature, switch to the first Symfony version that included it, e.g.
 ``upstream/3.1``. Not sure? That's ok! Just use the ``upstream/master`` branch.
 
@@ -141,7 +127,7 @@ new feature, switch to the first Symfony version that included it, e.g.
 even remove any content and do your best to comply with the
 :doc:`/contributing/documentation/standards`. Then commit your changes!
 
-.. code-block:: bash
+.. code-block:: terminal
 
     # if the modified content existed before
     $ git add setup.rst
@@ -149,16 +135,16 @@ even remove any content and do your best to comply with the
 
 **Step 6.** **Push** the changes to your forked repository:
 
-.. code-block:: bash
+.. code-block:: terminal
 
-    $ git push origin improve_install_chapter
+    $ git push origin improve_install_article
 
 The ``origin`` value is the name of the Git remote that corresponds to your
-forked repository and ``improve_install_chapter`` is the name of the branch you
+forked repository and ``improve_install_article`` is the name of the branch you
 created previously.
 
 **Step 7.** Everything is now ready to initiate a **pull request**. Go to your
-forked repository at ``https//github.com/<YOUR GITHUB USERNAME>/symfony-docs``
+forked repository at ``https://github.com/YOUR-GITHUB-USERNAME/symfony-docs``
 and click on the **Pull Requests** link located in the sidebar.
 
 Then, click on the big **New pull request** button. As GitHub cannot guess the
@@ -169,9 +155,9 @@ changes should be applied:
    :align: center
 
 In this example, the **base fork** should be ``symfony/symfony-docs`` and
-the **base** branch should be the ``2.7``, which is the branch that you selected
+the **base** branch should be the ``3.4``, which is the branch that you selected
 to base your changes on. The **head fork** should be your forked copy
-of ``symfony-docs`` and the **compare** branch should be ``improve_install_chapter``,
+of ``symfony-docs`` and the **compare** branch should be ``improve_install_article``,
 which is the name of the branch you created and where you made your changes.
 
 .. _pull-request-format:
@@ -189,10 +175,10 @@ In case you are asked to add or modify something, don't create a new pull
 request. Instead, make sure that you are on the correct branch, make your
 changes and push the new changes:
 
-.. code-block:: bash
+.. code-block:: terminal
 
     $ cd projects/symfony-docs/
-    $ git checkout improve_install_chapter
+    $ git checkout improve_install_article
 
     # ... do your changes
 
@@ -200,7 +186,7 @@ changes and push the new changes:
 
 **Step 10.** After your pull request is eventually accepted and merged in the
 Symfony documentation, you will be included in the `Symfony Documentation
-Contributors`_ list. Moreover, if you happen to have a `SensioLabsConnect`_
+Contributors`_ list. Moreover, if you happen to have a `SymfonyConnect`_
 profile, you will get a cool `Symfony Documentation Badge`_.
 
 Your Next Documentation Contributions
@@ -214,21 +200,23 @@ your contributions will be much easier to complete.
 Here is a **checklist** of steps that will guide you through your next
 contribution to the Symfony docs:
 
-.. code-block:: bash
+.. code-block:: terminal
 
     # create a new branch based on the oldest maintained version
     $ cd projects/symfony-docs/
     $ git fetch upstream
-    $ git checkout -b my_changes upstream/2.7
+    $ git checkout -b my_changes upstream/3.4
 
     # ... do your changes
 
-    # add and commit your changes
-    $ git add xxx.rst     # (optional) only if this is a new content
+    # (optional) add your changes if this is a new content
+    $ git add xxx.rst
+
+    # commit your changes and push them to your fork
     $ git commit xxx.rst
     $ git push origin my_changes
 
-    # go to GitHub and create the Pull Request
+    # ... go to GitHub and create the Pull Request
 
     # (optional) make the changes requested by reviewers and commit them
     $ git commit xxx.rst
@@ -258,6 +246,30 @@ link displayed for Platform.sh service.
     Only Pull Requests to maintained branches are automatically built by
     Platform.sh. Check the `roadmap`_ for maintained branches.
 
+Build the Documentation Locally
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Alternatively you can build the documentation on your own computer for testing
+purposes following these steps:
+
+#. Install `pip`_ as explained in the `pip installation`_ article;
+
+#. Install `Sphinx`_ and `Sphinx Extensions for PHP and Symfony`_
+   (depending on your system, you may need to execute this command as root user):
+
+   .. code-block:: terminal
+
+        $ pip install sphinx~=1.3.0 git+https://github.com/fabpot/sphinx-php.git
+
+#. Run the following command to build the documentation in HTML format:
+
+   .. code-block:: terminal
+
+       $ cd _build/
+       $ make html
+
+The generated documentation is available in the ``_build/html`` directory.
+
 Frequently Asked Questions
 --------------------------
 
@@ -276,8 +288,8 @@ into multiple branches, corresponding to the different versions of Symfony itsel
 The ``master`` branch holds the documentation for the development branch of
 the code.
 
-Unless you're documenting a feature that was introduced after Symfony 2.7,
-your changes should always be based on the ``2.7`` branch. Documentation managers
+Unless you're documenting a feature that was introduced after Symfony 3.4,
+your changes should always be based on the ``3.4`` branch. Documentation managers
 will use the necessary Git-magic to also apply your changes to all the active
 branches of the documentation.
 
@@ -311,8 +323,12 @@ definitely don't want you to waste your time!
 .. _`GitHub`: https://github.com/
 .. _`fork the repository`: https://help.github.com/articles/fork-a-repo
 .. _`Symfony Documentation Contributors`: https://symfony.com/contributors/doc
-.. _`SensioLabsConnect`: https://connect.sensiolabs.com/
-.. _`Symfony Documentation Badge`: https://connect.sensiolabs.com/badge/36/symfony-documentation-contributor
+.. _`SymfonyConnect`: https://connect.symfony.com/
+.. _`Symfony Documentation Badge`: https://connect.symfony.com/badge/36/symfony-documentation-contributor
 .. _`sync your fork`: https://help.github.com/articles/syncing-a-fork
 .. _`Platform.sh`: https://platform.sh
 .. _`roadmap`: https://symfony.com/roadmap
+.. _`pip`: https://pip.pypa.io/en/stable/
+.. _`pip installation`: https://pip.pypa.io/en/stable/installing/
+.. _`Sphinx`: http://sphinx-doc.org/
+.. _`Sphinx Extensions for PHP and Symfony`: https://github.com/fabpot/sphinx-php

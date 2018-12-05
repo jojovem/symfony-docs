@@ -5,7 +5,7 @@ Upgrading a Third-Party Bundle for a Major Symfony Version
 ==========================================================
 
 Symfony 3 was released on November 2015. Although this version doesn't contain
-any new feature, it removes all the backwards compatibility layers included in
+any new features, it removes all the backward compatibility layers included in
 the previous 2.8 version. If your bundle uses any deprecated feature and it's
 published as a third-party bundle, applications upgrading to Symfony 3 will no
 longer be able to use it.
@@ -27,9 +27,9 @@ Most third-party bundles define their Symfony dependencies using the ``~2.N`` or
     }
 
 These constraints prevent the bundle from using Symfony 3 components, so it makes
-it impossible to install it in a Symfony 3 based application. This issue is very
-easy to solve thanks to the flexibility of Composer dependencies constraints.
-Just replace ``~2.N`` by ``~2.N|~3.0`` (or ``^2.N`` by ``^2.N|~3.0``).
+it impossible to install it in a Symfony 3 based application. Thanks to the
+flexibility of Composer dependencies constraints, you can specify more than one
+major version by replacing ``~2.N`` by ``~2.N|~3.0`` (or ``^2.N`` by ``^2.N|~3.0``).
 
 The above example can be updated to work with Symfony 3 as follows:
 
@@ -60,16 +60,17 @@ the `symfony/phpunit-bridge package`_ and then run the test suite.
 
 First, install the component as a ``dev`` dependency of your bundle:
 
-.. code-block:: bash
+.. code-block:: terminal
 
     $ composer require --dev symfony/phpunit-bridge
 
 Then, run your test suite and look for the deprecation list displayed after the
 PHPUnit test report:
 
-.. code-block:: bash
+.. code-block:: terminal
 
-    $ phpunit
+    # this command is available after running "composer require --dev symfony/phpunit-bridge"
+    $ ./bin/phpunit
 
     # ... PHPUnit output
 
@@ -112,10 +113,10 @@ in a Symfony 3 application. Assuming that you already have a Symfony 3 applicati
 you can test the updated bundle locally without having to install it through
 Composer.
 
-If your operating system supports symbolic links, just point the appropriate
+If your operating system supports symbolic links, instead point the appropriate
 vendor directory to your local bundle root directory:
 
-.. code-block:: bash
+.. code-block:: terminal
 
     $ ln -s /path/to/your/local/bundle/ vendor/you-vendor-name/your-bundle-name
 
@@ -151,7 +152,7 @@ following recommended configuration as the starting point of your own configurat
             - php: 5.6
               env: SYMFONY_VERSION='3.1.*'
             - php: 5.6
-              env: DEPENDENCES='dev' SYMFONY_VERSION='3.2.*@dev'
+              env: DEPENDENCIES='dev' SYMFONY_VERSION='3.2.*@dev'
 
     before_install:
         - composer self-update
@@ -173,7 +174,7 @@ Before diving into the specifics of the most common edge cases, the general
 recommendation is to **not rely on the Symfony Kernel version** to decide which
 code to use::
 
-    if (Kernel::VERSION_ID <= 20800) {
+    if (Kernel::VERSION_ID < 20800) {
         // code for Symfony 2.x
     } else {
         // code for Symfony 3.x
@@ -183,11 +184,20 @@ Instead of checking the Symfony Kernel version, check the version of the specifi
 component. For example, the OptionsResolver API changed in its 2.6 version by
 adding a ``setDefined()`` method. The recommended check in this case would be::
 
-    if (!method_exists('Symfony\Component\OptionsResolver\OptionsResolver', 'setDefined')) {
+    use Symfony\Component\OptionsResolver\OptionsResolver;
+
+    if (!method_exists(OptionsResolver::class, 'setDefined')) {
         // code for the old OptionsResolver API
     } else {
         // code for the new OptionsResolver API
     }
+
+.. tip::
+
+    There is one case when you actually can rely on the
+    ``Symfony\Component\HttpKernel\Kernel::VERSION_ID`` constant: when trying
+    to detect the version of the ``symfony/http-kernel`` component, because it
+    is the component where this constant is defined.
 
 .. _`symfony/phpunit-bridge package`: https://github.com/symfony/phpunit-bridge
 .. _`Official Symfony Guide to Upgrade from 2.x to 3.0`: https://github.com/symfony/symfony/blob/2.8/UPGRADE-3.0.md

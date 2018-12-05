@@ -1,121 +1,56 @@
 .. index::
     pair: Twig; Configuration reference
 
-TwigBundle Configuration ("twig")
-=================================
+Twig Configuration Reference (TwigBundle)
+=========================================
 
-.. configuration-block::
+The TwigBundle integrates the Twig library in Symfony applications to
+:doc:`render templates </templating>`. All these options are configured under
+the ``twig`` key in your application configuration.
 
-    .. code-block:: yaml
+.. code-block:: terminal
 
-        twig:
-            exception_controller:  twig.controller.exception:showAction
+    # displays the default config values defined by Symfony
+    $ php bin/console config:dump-reference twig
 
-            form_themes:
+    # displays the actual config values used by your application
+    $ php bin/console debug:config twig
 
-                # Default:
-                - form_div_layout.html.twig
+.. note::
 
-                # Bootstrap:
-                - bootstrap_3_layout.html.twig
-                - bootstrap_3_horizontal_layout.html.twig
-
-                # Foundation
-                - foundation_5_layout.html.twig
-
-                # Example:
-                - MyBundle::form.html.twig
-
-            globals:
-
-                # Examples:
-                foo:                 '@bar'
-                pi:                  3.14
-
-                # Example options, but the easiest use is as seen above
-                some_variable_name:
-                    # a service id that should be the value
-                    id:                   ~
-                    # set to service or leave blank
-                    type:                 ~
-                    value:                ~
-            autoescape:                ~
-
-            # See http://twig.sensiolabs.org/doc/recipes.html#using-the-template-name-to-set-the-default-escaping-strategy
-            autoescape_service:        ~ # Example: '@my_service'
-            autoescape_service_method: ~ # use in combination with autoescape_service option
-            base_template_class:       ~ # Example: Twig_Template
-            cache:                     '%kernel.cache_dir%/twig'
-            charset:                   '%kernel.charset%'
-            debug:                     '%kernel.debug%'
-            strict_variables:          ~
-            auto_reload:               ~
-            optimizations:             ~
-            paths:
-                '%kernel.root_dir%/../vendor/acme/foo-bar/templates': foo_bar
-
-    .. code-block:: xml
-
-        <container xmlns="http://symfony.com/schema/dic/services"
-            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-            xmlns:twig="http://symfony.com/schema/dic/twig"
-            xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/schema/dic/services/services-1.0.xsd
-                                http://symfony.com/schema/dic/twig http://symfony.com/schema/dic/twig/twig-1.0.xsd">
-
-            <twig:config
-                auto-reload="%kernel.debug%"
-                autoescape="true"
-                base-template-class="Twig_Template"
-                cache="%kernel.cache_dir%/twig"
-                charset="%kernel.charset%"
-                debug="%kernel.debug%"
-                strict-variables="false"
-                optimizations="true"
-            >
-                <twig:form-theme>form_div_layout.html.twig</twig:form-theme> <!-- Default -->
-                <twig:form-theme>MyBundle::form.html.twig</twig:form-theme>
-
-                <twig:global key="foo" id="bar" type="service" />
-                <twig:global key="pi">3.14</twig:global>
-
-                <twig:exception-controller>AcmeFooBundle:Exception:showException</twig:exception-controller>
-                <twig:path namespace="foo_bar">%kernel.root_dir%/../vendor/acme/foo-bar/templates</twig:path>
-            </twig:config>
-        </container>
-
-    .. code-block:: php
-
-        $container->loadFromExtension('twig', array(
-            'form_themes' => array(
-                'form_div_layout.html.twig', // Default
-                'MyBundle::form.html.twig',
-             ),
-             'globals' => array(
-                 'foo' => '@bar',
-                 'pi'  => 3.14,
-             ),
-             'auto_reload'          => '%kernel.debug%',
-             'autoescape'           => true,
-             'base_template_class'  => 'Twig_Template',
-             'cache'                => '%kernel.cache_dir%/twig',
-             'charset'              => '%kernel.charset%',
-             'debug'                => '%kernel.debug%',
-             'strict_variables'     => false,
-             'exception_controller' => 'AcmeFooBundle:Exception:showException',
-             'optimizations'        => true,
-             'paths' => array(
-                 '%kernel.root_dir%/../vendor/acme/foo-bar/templates' => 'foo_bar',
-             ),
-        ));
-
-.. caution::
-
-    The ``twig.form`` (``<twig:form />`` tag for xml) configuration key
-    has been deprecated and will be removed in 3.0. Instead, use the ``twig.form_themes``
-    option.
+    When using XML, you must use the ``http://symfony.com/schema/dic/twig``
+    namespace and the related XSD schema is available at:
+    ``http://symfony.com/schema/dic/twig/twig-1.0.xsd``
 
 Configuration
 -------------
+
+.. class:: list-config-options list-config-options--complex
+
+* `auto_reload`_
+* `autoescape`_
+* `autoescape_service`_
+* `autoescape_service_method`_
+* `base_template_class`_
+* `cache`_
+* `charset`_
+* `date`_
+
+  * `format`_
+  * `interval_format`_
+  * `timezone`_
+
+* `debug`_
+* `exception_controller`_
+* `number_format`_
+
+  * `decimals`_
+  * `decimal_point`_
+  * `thousands_separator`_
+
+* `optimizations`_
+* `paths`_
+* `strict_variables`_
 
 auto_reload
 ~~~~~~~~~~~
@@ -129,10 +64,9 @@ compiled again automatically.
 autoescape
 ~~~~~~~~~~
 
-**type**: ``boolean`` or ``string`` **default**: ``'filename'``
+**type**: ``boolean`` or ``string`` **default**: ``'name'``
 
-If set to ``true``, all template contents are escaped for HTML. If set to
-``false``, automatic escaping is disabled (you can still escape each content
+If set to ``false``, automatic escaping is disabled (you can still escape each content
 individually in the templates).
 
 .. caution::
@@ -144,9 +78,9 @@ individually in the templates).
 
 If set to a string, the template contents are escaped using the strategy with
 that name. Allowed values are ``html``, ``js``, ``css``, ``url``, ``html_attr``
-and ``filename``. The default value is ``filename``. This strategy escapes
-contents according to the filename extension (e.g. it uses ``html`` for
-``*.html.twig`` templates and ``js`` for ``*.js.html`` templates).
+and ``name``. The default value is ``name``. This strategy escapes contents
+according to the template name extension (e.g. it uses ``html`` for ``*.html.twig``
+templates and ``js`` for ``*.js.html`` templates).
 
 .. tip::
 
@@ -177,7 +111,7 @@ called to determine the default escaping applied to the template.
 base_template_class
 ~~~~~~~~~~~~~~~~~~~
 
-**type**: ``string`` **default**: ``'Twig_Template'``
+**type**: ``string`` **default**: ``'Twig\\Template'``
 
 Twig templates are compiled into PHP classes before using them to render
 contents. This option defines the base class from which all the template classes
@@ -187,13 +121,13 @@ application harder to maintain.
 cache
 ~~~~~
 
-**type**: ``string`` **default**: ``'%kernel.cache_dir%/twig'``
+**type**: ``string`` | ``false`` **default**: ``'%kernel.cache_dir%/twig'``
 
 Before using the Twig templates to render some contents, they are compiled into
 regular PHP code. Compilation is a costly process, so the result is cached in
 the directory defined by this configuration option.
 
-Set this option to ``null`` to disable Twig template compilation. However, this
+Set this option to ``false`` to disable Twig template compilation. However, this
 is not recommended; not even in the ``dev`` environment, because the
 ``auto_reload`` option ensures that cached templates which have changed get
 compiled again.
@@ -203,8 +137,40 @@ charset
 
 **type**: ``string`` **default**: ``'%kernel.charset%'``
 
-The charset used by the template files. In the Symfony Standard edition this
-defaults to the ``UTF-8`` charset.
+The charset used by the template files. By default it's the same as the value of
+the ``kernel.charset`` container parameter, which is ``UTF-8`` by default in
+Symfony applications.
+
+date
+~~~~
+
+These options define the default values used by the ``date`` filter to format
+date and time values. They are useful to avoid passing the same arguments on
+every ``date`` filter call.
+
+format
+......
+
+**type**: ``string`` **default**: ``F j, Y H:i``
+
+The format used by the ``date`` filter to display values when no specific format
+is passed as argument.
+
+interval_format
+...............
+
+**type**: ``string`` **default**: ``%d days``
+
+The format used by the ``date`` filter to display ``DateInterval`` instances
+when no specific format is passed as argument.
+
+timezone
+........
+
+**type**: ``string`` **default**: (the value returned by ``date_default_timezone_get()``)
+
+The timezone used when formatting date values with the ``date`` filter and no
+specific timezone is passed as argument.
 
 debug
 ~~~~~
@@ -230,6 +196,38 @@ option is advanced. If you need to customize an error page you should use
 the previous link. If you need to perform some behavior on an exception,
 you should add a listener to the ``kernel.exception`` event (see :ref:`dic-tags-kernel-event-listener`).
 
+number_format
+~~~~~~~~~~~~~
+
+These options define the default values used by the ``number_format`` filter to
+format numeric values. They are useful to avoid passing the same arguments on
+every ``number_format`` filter call.
+
+decimals
+........
+
+**type**: ``integer`` **default**: ``0``
+
+The number of decimals used to format numeric values when no specific number is
+passed as argument to the ``number_format`` filter.
+
+decimal_point
+.............
+
+**type**: ``string`` **default**: ``.``
+
+The character used to separate the decimals from the integer part of numeric
+values when no specific character is passed as argument to the ``number_format``
+filter.
+
+thousands_separator
+...................
+
+**type**: ``string`` **default**: ``,``
+
+The character used to separate every group of thousands in numeric values when
+no specific character is passed as argument to the ``number_format`` filter.
+
 optimizations
 ~~~~~~~~~~~~~
 
@@ -246,15 +244,33 @@ on. Set it to ``0`` to disable all the optimizations. You can even enable or
 disable these optimizations selectively, as explained in the Twig documentation
 about `the optimizer extension`_.
 
+default_path
+~~~~~~~~~~~~
+
+**type**: ``string`` **default**: ``'%kernel.project_dir%/templates'``
+
+The default directory where Symfony will look for Twig templates.
+
+.. _config-twig-paths:
+
 paths
 ~~~~~
 
 **type**: ``array`` **default**: ``null``
 
+.. versionadded:: 4.2
+    Using the ``src/Resources/views/`` directory to store templates was
+    deprecated in Symfony 4.2. Use instead the directory defined in the
+    ``default_path`` option (which is ``templates/`` by default).
+
 This option defines the directories where Symfony will look for Twig templates
-in addition to the default locations (``app/Resources/views/`` and the bundles'
-``Resources/views/`` directories). This is useful to integrate the templates
-included in some library or package used by your application.
+in addition to the default locations. Symfony looks for the templates in the
+following order:
+
+#. The directories defined in this option;
+#. The ``Resources/views/`` directories of the bundles used in the application;
+#. The ``src/Resources/views/`` directory of the application;
+#. The directory defined in the ``default_path`` option.
 
 The values of the ``paths`` option are defined as ``key: value`` pairs where the
 ``value`` part can be ``null``. For example:
@@ -263,34 +279,35 @@ The values of the ``paths`` option are defined as ``key: value`` pairs where the
 
     .. code-block:: yaml
 
-        # app/config/config.yml
+        # config/packages/twig.yaml
         twig:
             # ...
             paths:
-                '%kernel.root_dir%/../vendor/acme/foo-bar/templates': ~
+                '%kernel.project_dir%/vendor/acme/foo-bar/templates': ~
 
     .. code-block:: xml
 
-        <!-- app/config/config.xml -->
+        <!-- config/packages/twig.xml -->
         <container xmlns="http://symfony.com/schema/dic/services"
             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
             xmlns:twig="http://symfony.com/schema/dic/twig"
-            xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/schema/dic/services/services-1.0.xsd
-                                http://symfony.com/schema/dic/twig http://symfony.com/schema/dic/twig/twig-1.0.xsd">
+            xsi:schemaLocation="http://symfony.com/schema/dic/services
+                http://symfony.com/schema/dic/services/services-1.0.xsd
+                http://symfony.com/schema/dic/twig http://symfony.com/schema/dic/twig/twig-1.0.xsd">
 
             <twig:config>
                 <!-- ... -->
-                <twig:path>%kernel.root_dir%/../vendor/acme/foo-bar/templates</twig:path>
+                <twig:path>%kernel.project_dir%/vendor/acme/foo-bar/templates</twig:path>
             </twig:config>
         </container>
 
     .. code-block:: php
 
-        // app/config/config.php
+        // config/packages/twig.php
         $container->loadFromExtension('twig', array(
             // ...
             'paths' => array(
-               '%kernel.root_dir%/../vendor/acme/foo-bar/templates' => null,
+               '%kernel.project_dir%/vendor/acme/foo-bar/templates' => null,
             ),
         ));
 
@@ -306,34 +323,35 @@ for that directory:
 
     .. code-block:: yaml
 
-        # app/config/config.yml
+        # config/packages/twig.yaml
         twig:
             # ...
             paths:
-                '%kernel.root_dir%/../vendor/acme/foo-bar/templates': 'foo_bar'
+                '%kernel.project_dir%/vendor/acme/foo-bar/templates': 'foo_bar'
 
     .. code-block:: xml
 
-        <!-- app/config/config.xml -->
+        <!-- config/packages/twig.xml -->
         <container xmlns="http://symfony.com/schema/dic/services"
             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
             xmlns:twig="http://symfony.com/schema/dic/twig"
-            xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/schema/dic/services/services-1.0.xsd
-                                http://symfony.com/schema/dic/twig http://symfony.com/schema/dic/twig/twig-1.0.xsd">
+            xsi:schemaLocation="http://symfony.com/schema/dic/services
+                http://symfony.com/schema/dic/services/services-1.0.xsd
+                http://symfony.com/schema/dic/twig http://symfony.com/schema/dic/twig/twig-1.0.xsd">
 
             <twig:config>
                 <!-- ... -->
-                <twig:path namespace="foo_bar">%kernel.root_dir%/../vendor/acme/foo-bar/templates</twig:path>
+                <twig:path namespace="foo_bar">%kernel.project_dir%/vendor/acme/foo-bar/templates</twig:path>
             </twig:config>
         </container>
 
     .. code-block:: php
 
-        # app/config/config.php
+        # config/packages/twig.php
         $container->loadFromExtension('twig', array(
             // ...
             'paths' => array(
-               '%kernel.root_dir%/../vendor/acme/foo-bar/templates' => 'foo_bar',
+               '%kernel.project_dir%/vendor/acme/foo-bar/templates' => 'foo_bar',
             ),
         ));
 
@@ -347,10 +365,10 @@ by Symfony. Besides, it simplifies how you refer to those templates:
 strict_variables
 ~~~~~~~~~~~~~~~~
 
-**type**: ``boolean`` **default**: ``'%kernel.debug%'``
+**type**: ``boolean`` **default**: ``false``
 
 If set to ``true``, Symfony shows an exception whenever a Twig variable,
 attribute or method doesn't exist. If set to ``false`` these errors are ignored
 and the non-existing values are replaced by ``null``.
 
-.. _`the optimizer extension`: http://twig.sensiolabs.org/doc/api.html#optimizer-extension
+.. _`the optimizer extension`: https://twig.symfony.com/doc/2.x/api.html#optimizer-extension

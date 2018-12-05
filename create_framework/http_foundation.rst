@@ -18,27 +18,27 @@ Even if the "application" we wrote in the previous chapter was simple enough,
 it suffers from a few problems::
 
     // framework/index.php
-    $input = $_GET['name'];
+    $name = $_GET['name'];
 
-    printf('Hello %s', $input);
+    printf('Hello %s', $name);
 
 First, if the ``name`` query parameter is not defined in the URL query string,
 you will get a PHP warning; so let's fix it::
 
     // framework/index.php
-    $input = isset($_GET['name']) ? $_GET['name'] : 'World';
+    $name = isset($_GET['name']) ? $_GET['name'] : 'World';
 
-    printf('Hello %s', $input);
+    printf('Hello %s', $name);
 
 Then, this *application is not secure*. Can you believe it? Even this simple
 snippet of PHP code is vulnerable to one of the most widespread Internet
 security issue, XSS (Cross-Site Scripting). Here is a more secure version::
 
-    $input = isset($_GET['name']) ? $_GET['name'] : 'World';
+    $name = isset($_GET['name']) ? $_GET['name'] : 'World';
 
     header('Content-Type: text/html; charset=utf-8');
 
-    printf('Hello %s', htmlspecialchars($input, ENT_QUOTES, 'UTF-8'));
+    printf('Hello %s', htmlspecialchars($name, ENT_QUOTES, 'UTF-8'));
 
 .. note::
 
@@ -58,7 +58,9 @@ snippet of PHP code is not natural and feels ugly. Here is a tentative PHPUnit
 unit test for the above code::
 
     // framework/test.php
-    class IndexTest extends \PHPUnit_Framework_TestCase
+    use PHPUnit\Framework\TestCase;
+
+    class IndexTest extends TestCase
     {
         public function testHello()
         {
@@ -112,25 +114,14 @@ layer.
 
 To use this component, add it as a dependency of the project:
 
-.. code-block:: bash
+.. code-block:: terminal
 
     $ composer require symfony/http-foundation
 
 Running this command will also automatically download the Symfony
 HttpFoundation component and install it under the ``vendor/`` directory.
 A ``composer.json`` and a ``composer.lock`` file will be generated as well,
-containing the new requirement:
-
-.. code-block:: json
-
-    {
-        "require": {
-            "symfony/http-foundation": "^3.0"
-        }
-    }
-
-The code block shows the content of the ``composer.json`` file (the actual
-version may vary).
+containing the new requirement.
 
 .. sidebar:: Class Autoloading
 
@@ -151,9 +142,9 @@ Now, let's rewrite our application by using the ``Request`` and the
 
     $request = Request::createFromGlobals();
 
-    $input = $request->get('name', 'World');
+    $name = $request->get('name', 'World');
 
-    $response = new Response(sprintf('Hello %s', htmlspecialchars($input, ENT_QUOTES, 'UTF-8')));
+    $response = new Response(sprintf('Hello %s', htmlspecialchars($name, ENT_QUOTES, 'UTF-8')));
 
     $response->send();
 
@@ -201,7 +192,7 @@ fingertips thanks to a nice and simple API::
 
     // retrieve an HTTP request header, with normalized, lowercase keys
     $request->headers->get('host');
-    $request->headers->get('content_type');
+    $request->headers->get('content-type');
 
     $request->getMethod();    // GET, POST, PUT, DELETE, HEAD
     $request->getLanguages(); // an array of languages the client accepts
@@ -210,7 +201,7 @@ You can also simulate a request::
 
     $request = Request::create('/index.php?name=Fabien');
 
-With the ``Response`` class, you can easily tweak the response::
+With the ``Response`` class, you can tweak the response::
 
     $response = new Response();
 
@@ -226,7 +217,7 @@ With the ``Response`` class, you can easily tweak the response::
     To debug a response, cast it to a string; it will return the HTTP
     representation of the response (headers and content).
 
-Last but not the least, these classes, like every other class in the Symfony
+Last but not least, these classes, like every other class in the Symfony
 code, have been `audited`_ for security issues by an independent company. And
 being an Open-Source project also means that many other developers around the
 world have read the code and have already fixed potential security problems.
@@ -267,13 +258,13 @@ explicitly trust your reverse proxies by calling ``setTrustedProxies()``::
 
     Request::setTrustedProxies(array('10.0.0.1'));
 
-    if ($myIp === $request->getClientIp(true)) {
+    if ($myIp === $request->getClientIp()) {
         // the client is a known one, so give it some more privilege
     }
 
 So, the ``getClientIp()`` method works securely in all circumstances. You can
 use it in all your projects, whatever the configuration is, it will behave
-correctly and safely. That's one of the goal of using a framework. If you were
+correctly and safely. That's one of the goals of using a framework. If you were
 to write a framework from scratch, you would have to think about all these
 cases by yourself. Why not using a technology that already works?
 
@@ -294,20 +285,20 @@ the wheel.
 
 I've almost forgot to talk about one added benefit: using the HttpFoundation
 component is the start of better interoperability between all frameworks and
-applications using it (like `Symfony`_, `Drupal 8`_, `phpBB 4`_, `ezPublish
-5`_, `Laravel`_, `Silex`_ and `more`_).
+`applications using it`_ (like `Symfony`_, `Drupal 8`_, `phpBB 3`_, `ezPublish
+5`_, `Laravel`_ and `more`_).
 
-.. _`Twig`: http://twig.sensiolabs.org/
-.. _`HTTP specification`: http://tools.ietf.org/wg/httpbis/
-.. _`audited`: http://symfony.com/blog/symfony2-security-audit
-.. _`Symfony`: http://symfony.com/
+.. _`Twig`: https://twig.symfony.com/
+.. _`HTTP specification`: https://tools.ietf.org/wg/httpbis/
+.. _`audited`: https://symfony.com/blog/symfony2-security-audit
+.. _`applications using it`: https://symfony.com/components/HttpFoundation
+.. _`Symfony`: https://symfony.com/
 .. _`Drupal 8`: https://drupal.org/
-.. _`phpBB 4`: https://www.phpbb.com/
-.. _`ezPublish 5`: http://ez.no/
-.. _`Laravel`: http://laravel.com/
-.. _`Silex`: http://silex.sensiolabs.org/
+.. _`phpBB 3`: https://www.phpbb.com/
+.. _`ezPublish 5`: https://ez.no/
+.. _`Laravel`: https://laravel.com/
 .. _`Midgard CMS`: http://www.midgard-project.org/
-.. _`Zikula`: http://zikula.org/
-.. _`autoloaded`: http://php.net/autoload
-.. _`PSR-4`: http://www.php-fig.org/psr/psr-4/
-.. _`more`: http://symfony.com/components/HttpFoundation
+.. _`Zikula`: https://zikula.org/
+.. _`autoloaded`: https://php.net/autoload
+.. _`PSR-4`: https://www.php-fig.org/psr/psr-4/
+.. _`more`: https://symfony.com/components/HttpFoundation

@@ -29,8 +29,8 @@ on an object that will contain an ISBN.
 
     .. code-block:: php-annotations
 
-        // src/AppBundle/Entity/Book.php
-        namespace AppBundle\Entity;
+        // src/Entity/Book.php
+        namespace App\Entity;
 
         use Symfony\Component\Validator\Constraints as Assert;
 
@@ -47,24 +47,23 @@ on an object that will contain an ISBN.
 
     .. code-block:: yaml
 
-        # src/AppBundle/Resources/config/validation.yml
-        AppBundle\Entity\Book:
+        # config/validator/validation.yaml
+        App\Entity\Book:
             properties:
                 isbn:
                     - Isbn:
                         type: isbn10
                         message: This value is not  valid.
 
-
     .. code-block:: xml
 
-        <!-- src/AppBundle/Resources/config/validation.xml -->
+        <!-- config/validator/validation.xml -->
         <?xml version="1.0" encoding="UTF-8" ?>
         <constraint-mapping xmlns="http://symfony.com/schema/dic/constraint-mapping"
             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
             xsi:schemaLocation="http://symfony.com/schema/dic/constraint-mapping http://symfony.com/schema/dic/constraint-mapping/constraint-mapping-1.0.xsd">
 
-            <class name="AppBundle\Entity\Book">
+            <class name="App\Entity\Book">
                 <property name="isbn">
                     <constraint name="Isbn">
                         <option name="type">isbn10</option>
@@ -76,8 +75,8 @@ on an object that will contain an ISBN.
 
     .. code-block:: php
 
-        // src/AppBundle/Entity/Book.php
-        namespace AppBundle\Entity;
+        // src/Entity/Book.php
+        namespace App\Entity;
 
         use Symfony\Component\Validator\Mapping\ClassMetadata;
         use Symfony\Component\Validator\Constraints as Assert;
@@ -90,10 +89,12 @@ on an object that will contain an ISBN.
             {
                 $metadata->addPropertyConstraint('isbn', new Assert\Isbn(array(
                     'type'    => 'isbn10',
-                    'message' => 'This value is not valid.'
+                    'message' => 'This value is not valid.',
                 )));
             }
         }
+
+.. include:: /reference/constraints/_empty-values-are-valid.rst.inc
 
 Available Options
 -----------------
@@ -114,6 +115,14 @@ message
 The message that will be shown if the value is not valid. If not ``null``,
 this message has priority over all the other messages.
 
+You can use the following parameters in this message:
+
++-----------------+-----------------------------+
+| Parameter       | Description                 |
++=================+=============================+
+| ``{{ value }}`` | The current (invalid) value |
++-----------------+-----------------------------+
+
 isbn10Message
 ~~~~~~~~~~~~~
 
@@ -121,6 +130,14 @@ isbn10Message
 
 The message that will be shown if the `type`_ option is ``isbn10`` and the given
 value does not pass the ISBN-10 check.
+
+You can use the following parameters in this message:
+
++-----------------+-----------------------------+
+| Parameter       | Description                 |
++=================+=============================+
+| ``{{ value }}`` | The current (invalid) value |
++-----------------+-----------------------------+
 
 isbn13Message
 ~~~~~~~~~~~~~
@@ -130,6 +147,14 @@ isbn13Message
 The message that will be shown if the `type`_ option is ``isbn13`` and the given
 value does not pass the ISBN-13 check.
 
+You can use the following parameters in this message:
+
++-----------------+-----------------------------+
+| Parameter       | Description                 |
++=================+=============================+
+| ``{{ value }}`` | The current (invalid) value |
++-----------------+-----------------------------+
+
 bothIsbnMessage
 ~~~~~~~~~~~~~~~
 
@@ -137,6 +162,14 @@ bothIsbnMessage
 
 The message that will be shown if the `type`_ option is ``null`` and the given
 value does not pass any of the ISBN checks.
+
+You can use the following parameters in this message:
+
++-----------------+-----------------------------+
+| Parameter       | Description                 |
++=================+=============================+
+| ``{{ value }}`` | The current (invalid) value |
++-----------------+-----------------------------+
 
 .. include:: /reference/constraints/_payload-option.rst.inc
 

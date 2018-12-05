@@ -10,7 +10,7 @@ firewall map is able to extract the user's credentials from the current
 a token, containing these credentials. The next thing the listener should
 do is ask the authentication manager to validate the given token, and return
 an *authenticated* token if the supplied credentials were found to be valid.
-The listener should then store the authenticated token using 
+The listener should then store the authenticated token using
 :class:`the token storage <Symfony\\Component\\Security\\Core\\Authentication\\Token\\Storage\\TokenStorageInterface>`::
 
     use Symfony\Component\Security\Http\Firewall\ListenerInterface;
@@ -71,6 +71,7 @@ The default authentication manager is an instance of
 :class:`Symfony\\Component\\Security\\Core\\Authentication\\AuthenticationProviderManager`::
 
     use Symfony\Component\Security\Core\Authentication\AuthenticationProviderManager;
+    use Symfony\Component\Security\Core\Exception\AuthenticationException;
 
     // instances of Symfony\Component\Security\Core\Authentication\Provider\AuthenticationProviderInterface
     $providers = array(...);
@@ -80,7 +81,7 @@ The default authentication manager is an instance of
     try {
         $authenticatedToken = $authenticationManager
             ->authenticate($unauthenticatedToken);
-    } catch (AuthenticationException $failed) {
+    } catch (AuthenticationException $exception) {
         // authentication failed
     }
 
@@ -89,8 +90,8 @@ authentication providers, each supporting a different type of token.
 
 .. note::
 
-    You may of course write your own authentication manager, it only has
-    to implement :class:`Symfony\\Component\\Security\\Core\\Authentication\\AuthenticationManagerInterface`.
+    You may write your own authentication manager, the only requirement is that
+    it implements :class:`Symfony\\Component\\Security\\Core\\Authentication\\AuthenticationManagerInterface`.
 
 .. _authentication_providers:
 
@@ -140,20 +141,20 @@ password was valid::
         )
     );
 
-    // for some extra checks: is account enabled, locked, expired, etc.?
+    // for some extra checks: is account enabled, locked, expired, etc.
     $userChecker = new UserChecker();
 
     // an array of password encoders (see below)
     $encoderFactory = new EncoderFactory(...);
 
-    $provider = new DaoAuthenticationProvider(
+    $daoProvider = new DaoAuthenticationProvider(
         $userProvider,
         $userChecker,
         'secured_area',
         $encoderFactory
     );
 
-    $provider->authenticate($unauthenticatedToken);
+    $daoProvider->authenticate($unauthenticatedToken);
 
 .. note::
 
@@ -172,19 +173,19 @@ user. This allows you to use different encoding strategies for different
 types of users. The default :class:`Symfony\\Component\\Security\\Core\\Encoder\\EncoderFactory`
 receives an array of encoders::
 
+    use Acme\Entity\LegacyUser;
     use Symfony\Component\Security\Core\Encoder\EncoderFactory;
     use Symfony\Component\Security\Core\Encoder\MessageDigestPasswordEncoder;
+    use Symfony\Component\Security\Core\User\User;
 
     $defaultEncoder = new MessageDigestPasswordEncoder('sha512', true, 5000);
     $weakEncoder = new MessageDigestPasswordEncoder('md5', true, 1);
 
     $encoders = array(
-        'Symfony\\Component\\Security\\Core\\User\\User' => $defaultEncoder,
-        'Acme\\Entity\\LegacyUser'                       => $weakEncoder,
-
+        User::class       => $defaultEncoder,
+        LegacyUser::class => $weakEncoder,
         // ...
     );
-
     $encoderFactory = new EncoderFactory($encoders);
 
 Each encoder should implement :class:`Symfony\\Component\\Security\\Core\\Encoder\\PasswordEncoderInterface`
@@ -195,7 +196,7 @@ Creating a custom Password Encoder
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 There are many built-in password encoders. But if you need to create your
-own, it just needs to follow these rules:
+own, it needs to follow these rules:
 
 #. The class must implement :class:`Symfony\\Component\\Security\\Core\\Encoder\\PasswordEncoderInterface`;
 
@@ -229,6 +230,7 @@ own, it just needs to follow these rules:
                }
 
                // ...
+           }
        }
 
 Using Password Encoders
@@ -247,7 +249,7 @@ which should be used to encode this user's password::
 
     $encoder = $encoderFactory->getEncoder($user);
 
-    // will return $weakEncoder (see above)
+    // returns $weakEncoder (see above)
     $encodedPassword = $encoder->encodePassword($plainPassword, $user->getSalt());
 
     $user->setPassword($encodedPassword);
@@ -303,9 +305,8 @@ The ``security.interactive_login`` event is triggered after a user has actively
 logged into your website.  It is important to distinguish this action from
 non-interactive authentication methods, such as:
 
-* authentication based on a "remember me" cookie.
 * authentication based on your session.
-* authentication using a HTTP basic or HTTP digest header.
+* authentication using a HTTP basic header.
 
 You could listen on the ``security.interactive_login`` event, for example, in
 order to give your user a welcome flash message every time they log in.

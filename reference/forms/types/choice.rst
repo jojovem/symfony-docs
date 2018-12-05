@@ -19,7 +19,6 @@ To use this field, you must specify *either* ``choices`` or ``choice_loader`` op
 |             | - `choice_name`_                                                             |
 |             | - `choice_translation_domain`_                                               |
 |             | - `choice_value`_                                                            |
-|             | - `choices_as_values`_ (deprecated)                                          |
 |             | - `expanded`_                                                                |
 |             | - `group_by`_                                                                |
 |             | - `multiple`_                                                                |
@@ -29,11 +28,15 @@ To use this field, you must specify *either* ``choices`` or ``choice_loader`` op
 | Overridden  | - `compound`_                                                                |
 | options     | - `empty_data`_                                                              |
 |             | - `error_bubbling`_                                                          |
+|             | - `trim`_                                                                    |
 +-------------+------------------------------------------------------------------------------+
-| Inherited   | - `by_reference`_                                                            |
-| options     | - `data`_                                                                    |
+| Inherited   | - `attr`_                                                                    |
+| options     | - `by_reference`_                                                            |
+|             | - `data`_                                                                    |
 |             | - `disabled`_                                                                |
 |             | - `error_mapping`_                                                           |
+|             | - `help`_                                                                    |
+|             | - `help_attr`_                                                               |
 |             | - `inherit_data`_                                                            |
 |             | - `label`_                                                                   |
 |             | - `label_attr`_                                                              |
@@ -81,8 +84,8 @@ This field has a *lot* of options and most control how the field is displayed. I
 this example, the underlying data is some ``Category`` object that has a ``getName()``
 method::
 
+    use App\Entity\Category;
     use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
-    use AppBundle\Entity\Category;
     // ...
 
     $builder->add('category', ChoiceType::class, [
@@ -92,18 +95,18 @@ method::
             new Category('Cat3'),
             new Category('Cat4'),
         ],
-        'choice_label' => function($category, $key, $index) {
+        'choice_label' => function($category, $key, $value) {
             /** @var Category $category */
             return strtoupper($category->getName());
         },
-        'choice_attr' => function($category, $key, $index) {
+        'choice_attr' => function($category, $key, $value) {
             return ['class' => 'category_'.strtolower($category->getName())];
         },
-        'group_by' => function($category, $key, $index) {
+        'group_by' => function($category, $key, $value) {
             // randomly assign things into 2 groups
             return rand(0, 1) == 1 ? 'Group A' : 'Group B';
         },
-        'preferred_choices' => function($category, $key, $index) {
+        'preferred_choices' => function($category, $key, $value) {
             return $category->getName() == 'Cat2' || $category->getName() == 'Cat3';
         },
     ]);
@@ -127,23 +130,24 @@ text that's shown to the user. But that can be completely customized via the
 Grouping Options
 ----------------
 
-You can easily "group" options in a select by passing a multi-dimensional choices array::
+You can group the ``<option>`` elements of a ``<select>`` into ``<optgroup>``
+by passing a multi-dimensional ``choices`` array::
 
     use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
     // ...
 
-    $builder->add('stockStatus', ChoiceType::class, [
-        'choices' => [
-            'Main Statuses' => [
+    $builder->add('stockStatus', ChoiceType::class, array(
+        'choices' => array(
+            'Main Statuses' => array(
                 'Yes' => 'stock_yes',
                 'No' => 'stock_no',
-            ],
-            'Out of Stock Statuses' => [
+            ),
+            'Out of Stock Statuses' => array(
                 'Backordered' => 'stock_backordered',
                 'Discontinued' => 'stock_discontinued',
-            ]
-        ],
-    );
+            ),
+        ),
+    ));
 
 .. image:: /_images/reference/form/choice-example4.png
    :align: center
@@ -169,6 +173,11 @@ is the item's label and the array value is the item's value::
         'choices' => array('In Stock' => true, 'Out of Stock' => false),
     ));
 
+If there are choice values that are not scalar or the stringified
+representation is not unique Symfony will use incrementing integers
+as values. When the form gets submitted the correct values with the
+correct types will be assigned to the model.
+
 .. include:: /reference/forms/types/options/choice_attr.rst.inc
 
 .. _reference-form-choice-label:
@@ -184,17 +193,28 @@ The ``choice_loader`` can be used to only partially load the choices in cases wh
 a fully-loaded list is not necessary. This is only needed in advanced cases and
 would replace the ``choices`` option.
 
+You can use an instance of :class:`Symfony\\Component\\Form\\ChoiceList\\Loader\\CallbackChoiceLoader`
+if you want to take advantage of lazy loading::
+
+    use Symfony\Component\Form\ChoiceList\Loader\CallbackChoiceLoader;
+    use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
+    // ...
+
+    $builder->add('constants', ChoiceType::class, array(
+        'choice_loader' => new CallbackChoiceLoader(function() {
+            return StaticClass::getConstants();
+        }),
+    ));
+
+This will cause the call of ``StaticClass::getConstants()`` to not happen if the
+request is redirected and if there is no pre set or submitted data. Otherwise
+the choice options would need to be resolved thus triggering the callback.
+
 .. include:: /reference/forms/types/options/choice_name.rst.inc
 
 .. include:: /reference/forms/types/options/choice_translation_domain.rst.inc
 
 .. include:: /reference/forms/types/options/choice_value.rst.inc
-
-choices_as_values
-~~~~~~~~~~~~~~~~~
-
-This option is deprecated and you should remove it from your 3.x projects (removing
-it will have *no* effect). For its purpose in 2.x, see the 2.7 documentation.
 
 .. include:: /reference/forms/types/options/expanded.rst.inc
 
@@ -237,10 +257,14 @@ error_bubbling
 Set that error on this field must be attached to the field instead of
 the parent field (the form in most cases).
 
+.. include:: /reference/forms/types/options/choice_type_trim.rst.inc
+
 Inherited Options
 -----------------
 
 These options inherit from the :doc:`FormType </reference/forms/types/form>`:
+
+.. include:: /reference/forms/types/options/attr.rst.inc
 
 .. include:: /reference/forms/types/options/by_reference.rst.inc
 
@@ -249,6 +273,10 @@ These options inherit from the :doc:`FormType </reference/forms/types/form>`:
 .. include:: /reference/forms/types/options/disabled.rst.inc
 
 .. include:: /reference/forms/types/options/error_mapping.rst.inc
+
+.. include:: /reference/forms/types/options/help.rst.inc
+
+.. include:: /reference/forms/types/options/help_attr.rst.inc
 
 .. include:: /reference/forms/types/options/inherit_data.rst.inc
 

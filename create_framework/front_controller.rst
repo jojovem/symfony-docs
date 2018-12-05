@@ -38,9 +38,9 @@ Let's see it in action::
     // framework/index.php
     require_once __DIR__.'/init.php';
 
-    $input = $request->get('name', 'World');
+    $name = $request->get('name', 'World');
 
-    $response->setContent(sprintf('Hello %s', htmlspecialchars($input, ENT_QUOTES, 'UTF-8')));
+    $response->setContent(sprintf('Hello %s', htmlspecialchars($name, ENT_QUOTES, 'UTF-8')));
     $response->send();
 
 And for the "Goodbye" page::
@@ -61,7 +61,7 @@ which name is exposed to the end user via the URL
 (``http://127.0.0.1:4321/bye.php``): there is a direct mapping between the PHP
 script name and the client URL. This is because the dispatching of the request
 is done by the web server directly. It might be a good idea to move this
-dispatching to our code for better flexibility. This can be easily achieved by
+dispatching to our code for better flexibility. This can be achieved by
 routing all client requests to a single PHP script.
 
 .. tip::
@@ -98,8 +98,8 @@ Such a script might look like the following::
 And here is for instance the new ``hello.php`` script::
 
     // framework/hello.php
-    $input = $request->get('name', 'World');
-    $response->setContent(sprintf('Hello %s', htmlspecialchars($input, ENT_QUOTES, 'UTF-8')));
+    $name = $request->get('name', 'World');
+    $response->setContent(sprintf('Hello %s', htmlspecialchars($name, ENT_QUOTES, 'UTF-8')));
 
 In the ``front.php`` script, ``$map`` associates URL paths with their
 corresponding PHP script paths.
@@ -140,7 +140,7 @@ web root directory:
 
     example.com
     ├── composer.json
-    ├── composer.lock    
+    ├── composer.lock
     ├── src
     │   └── pages
     │       ├── hello.php
@@ -153,10 +153,10 @@ web root directory:
 Now, configure your web server root directory to point to ``web/`` and all
 other files won't be accessible from the client anymore.
 
-To test your changes in a browser (``http://localhost:4321/hello/?name=Fabien``), run
+To test your changes in a browser (``http://localhost:4321/hello?name=Fabien``), run
 the PHP built-in server:
 
-.. code-block:: bash
+.. code-block:: terminal
 
     $ php -S 127.0.0.1:4321 -t web/ web/front.php
 
@@ -190,7 +190,7 @@ And the ``hello.php`` script can now be converted to a template::
     <!-- example.com/src/pages/hello.php -->
     <?php $name = $request->get('name', 'World') ?>
 
-    Hello <?php echo htmlspecialchars($name, ENT_QUOTES, 'UTF-8') ?>
+    Hello <?= htmlspecialchars($name, ENT_QUOTES, 'UTF-8') ?>
 
 We have the first version of our framework::
 

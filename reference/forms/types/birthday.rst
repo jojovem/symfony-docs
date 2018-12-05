@@ -38,6 +38,8 @@ option defaults to 120 years ago to the current year.
 |                      |                                                                               |
 |                      | - `data`_                                                                     |
 |                      | - `disabled`_                                                                 |
+|                      | - `help`_                                                                     |
+|                      | - `help_attr`_                                                                |
 |                      | - `inherit_data`_                                                             |
 |                      | - `invalid_message`_                                                          |
 |                      | - `invalid_message_parameters`_                                               |
@@ -77,14 +79,14 @@ If your widget option is set to ``choice``, then this field will be represented
 as a series of ``select`` boxes. When the placeholder value is a string,
 it will be used as the **blank value** of all select boxes::
 
-    $builder->add('birthdate', 'birthday', array(
+    $builder->add('birthdate', BirthdayType::class, array(
         'placeholder' => 'Select a value',
     ));
 
 Alternatively, you can use an array that configures different placeholder
 values for the year, month and day fields::
 
-    $builder->add('birthdate', 'birthday', array(
+    $builder->add('birthdate', BirthdayType::class, array(
         'placeholder' => array(
             'year' => 'Year', 'month' => 'Month', 'day' => 'Day',
         )
@@ -107,6 +109,10 @@ These options inherit from the :doc:`FormType </reference/forms/types/form>`:
 .. include:: /reference/forms/types/options/data.rst.inc
 
 .. include:: /reference/forms/types/options/disabled.rst.inc
+
+.. include:: /reference/forms/types/options/help.rst.inc
+
+.. include:: /reference/forms/types/options/help_attr.rst.inc
 
 .. include:: /reference/forms/types/options/inherit_data.rst.inc
 

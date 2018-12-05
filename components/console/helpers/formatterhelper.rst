@@ -4,7 +4,7 @@
 Formatter Helper
 ================
 
-The Formatter helpers provides functions to format the output with colors.
+The Formatter helper provides functions to format the output with colors.
 You can do more advanced things with this helper than you can in
 :doc:`/console/coloring`.
 
@@ -67,9 +67,6 @@ your own. See :doc:`/console/coloring`.
 Print Truncated Messages
 ------------------------
 
-.. versionadded:: 3.1
-    The ``truncate`` method was introduced in Symfony 3.1.
-
 Sometimes you want to print a message truncated to an explicit character length.
 This is possible with the
 :method:`Symfony\\Component\\Console\\Helper\\FormatterHelper::truncate` method.
@@ -104,10 +101,10 @@ Custom Suffix
 ~~~~~~~~~~~~~
 
 By default, the ``...`` suffix is used. If you wish to use a different suffix,
-simply pass it as the third argument to the method.
+pass it as the third argument to the method.
 The suffix is always appended, unless truncate length is longer than a message
 and a suffix length.
-If you don't want to use suffix at all, just pass an empty string::
+If you don't want to use suffix at all, pass an empty string::
 
     $truncatedMessage = $formatter->truncate($message, 7, '!!'); // result: This is!!
     $truncatedMessage = $formatter->truncate($message, 7, '');   // result: This is

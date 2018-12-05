@@ -1,9 +1,8 @@
 Date
 ====
 
-Validates that a value is a valid date, meaning either a ``DateTime`` object
-or a string (or an object that can be cast into a string) that follows a
-valid YYYY-MM-DD format.
+Validates that a value is a valid date, meaning a string (or an object that can
+be cast into a string) that follows a valid ``YYYY-MM-DD`` format.
 
 +----------------+--------------------------------------------------------------------+
 | Applies to     | :ref:`property or method <validation-property-target>`             |
@@ -23,36 +22,37 @@ Basic Usage
 
     .. code-block:: php-annotations
 
-        // src/AppBundle/Entity/Author.php
-        namespace AppBundle\Entity;
+        // src/Entity/Author.php
+        namespace App\Entity;
 
         use Symfony\Component\Validator\Constraints as Assert;
 
         class Author
         {
             /**
-             * @Assert\Date()
+             * @Assert\Date
+             * @var string A "Y-m-d" formatted value
              */
              protected $birthday;
         }
 
     .. code-block:: yaml
 
-        # src/AppBundle/Resources/config/validation.yml
-        AppBundle\Entity\Author:
+        # config/validator/validation.yaml
+        App\Entity\Author:
             properties:
                 birthday:
                     - Date: ~
 
     .. code-block:: xml
 
-        <!-- src/AppBundle/Resources/config/validation.xml -->
+        <!-- config/validator/validation.xml -->
         <?xml version="1.0" encoding="UTF-8" ?>
         <constraint-mapping xmlns="http://symfony.com/schema/dic/constraint-mapping"
             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
             xsi:schemaLocation="http://symfony.com/schema/dic/constraint-mapping http://symfony.com/schema/dic/constraint-mapping/constraint-mapping-1.0.xsd">
 
-            <class name="AppBundle\Entity\Author">
+            <class name="App\Entity\Author">
                 <property name="birthday">
                     <constraint name="Date" />
                 </property>
@@ -61,19 +61,26 @@ Basic Usage
 
     .. code-block:: php
 
-        // src/AppBundle/Entity/Author.php
-        namespace AppBundle\Entity;
+        // src/Entity/Author.php
+        namespace App\Entity;
 
         use Symfony\Component\Validator\Mapping\ClassMetadata;
         use Symfony\Component\Validator\Constraints as Assert;
 
         class Author
         {
+           /**
+            * @var string A "Y-m-d" formatted value
+            */
+            protected $birthday;
+
             public static function loadValidatorMetadata(ClassMetadata $metadata)
             {
                 $metadata->addPropertyConstraint('birthday', new Assert\Date());
             }
         }
+
+.. include:: /reference/constraints/_empty-values-are-valid.rst.inc
 
 Options
 -------
@@ -84,5 +91,13 @@ message
 **type**: ``string`` **default**: ``This value is not a valid date.``
 
 This message is shown if the underlying data is not a valid date.
+
+You can use the following parameters in this message:
+
++------------------+------------------------------------------------+
+| Parameter        | Description                                    |
++==================+================================================+
+| ``{{ value }}``  | The current (invalid) value                    |
++------------------+------------------------------------------------+
 
 .. include:: /reference/constraints/_payload-option.rst.inc

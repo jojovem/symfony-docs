@@ -8,13 +8,14 @@ If you're integrating the Symfony full-stack Framework into a legacy application
 that starts the session with ``session_start()``, you may still be able to
 use Symfony's session management by using the PHP Bridge session.
 
-If the application has it's own PHP save handler, you can specify null
+If the application has its own PHP save handler, you can specify null
 for the ``handler_id``:
 
 .. configuration-block::
 
     .. code-block:: yaml
 
+        # config/packages/framework.yaml
         framework:
             session:
                 storage_id: session.storage.php_bridge
@@ -22,9 +23,13 @@ for the ``handler_id``:
 
     .. code-block:: xml
 
+        <!-- config/packages/framework.xml -->
         <?xml version="1.0" encoding="UTF-8" ?>
         <container xmlns="http://symfony.com/schema/dic/services"
-            xmlns:framework="http://symfony.com/schema/dic/symfony">
+            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+            xmlns:framework="http://symfony.com/schema/dic/symfony"
+            xsi:schemaLocation="http://symfony.com/schema/dic/services
+                http://symfony.com/schema/dic/services/services-1.0.xsd">
 
             <framework:config>
                 <framework:session storage-id="session.storage.php_bridge"
@@ -35,13 +40,15 @@ for the ``handler_id``:
 
     .. code-block:: php
 
+        // config/packages/framework.php
         $container->loadFromExtension('framework', array(
             'session' => array(
                 'storage_id' => 'session.storage.php_bridge',
                 'handler_id' => null,
+            ),
         ));
 
-Otherwise, if the problem is simply that you cannot avoid the application
+Otherwise, if the problem is only that you cannot avoid the application
 starting the session with ``session_start()``, you can still make use of
 a Symfony based session save handler by specifying the save handler as in
 the example below:
@@ -50,6 +57,7 @@ the example below:
 
     .. code-block:: yaml
 
+        # config/packages/framework.yaml
         framework:
             session:
                 storage_id: session.storage.php_bridge
@@ -57,9 +65,13 @@ the example below:
 
     .. code-block:: xml
 
+        <!-- config/packages/framework.xml -->
         <?xml version="1.0" encoding="UTF-8" ?>
         <container xmlns="http://symfony.com/schema/dic/services"
-            xmlns:framework="http://symfony.com/schema/dic/symfony">
+            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+            xmlns:framework="http://symfony.com/schema/dic/symfony"
+            xsi:schemaLocation="http://symfony.com/schema/dic/services
+                http://symfony.com/schema/dic/services/services-1.0.xsd">
 
             <framework:config>
                 <framework:session storage-id="session.storage.php_bridge"
@@ -70,10 +82,12 @@ the example below:
 
     .. code-block:: php
 
+        // config/packages/framework.php
         $container->loadFromExtension('framework', array(
             'session' => array(
                 'storage_id' => 'session.storage.php_bridge',
                 'handler_id' => 'session.storage.native_file',
+            ),
         ));
 
 .. note::
@@ -82,7 +96,7 @@ the example below:
     override this. Instead set ``handler_id: ~``. Note that a save handler
     cannot be changed once the session has been started. If the application
     starts the session before Symfony is initialized, the save handler will
-    have already been  set. In this case, you will need ``handler_id: ~``.
+    have already been set. In this case, you will need ``handler_id: ~``.
     Only override the save handler if you are sure the legacy application
     can use the Symfony save handler without side effects and that the session
     has not been started before Symfony is initialized.

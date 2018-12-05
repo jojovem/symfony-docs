@@ -4,21 +4,19 @@
 How to Create a custom Authentication Provider
 ==============================================
 
-.. tip::
+.. caution::
 
-    Creating a custom authentication system is hard, and this entry will walk
-    you through that process. But depending on your needs, you may be able
-    to solve your problem in a simpler, or via a community bundle:
+    Creating a custom authentication system is hard, and almost definitely
+    **not** needed. Instead, see :doc:`/security/guard_authentication` for a
+    simple way to create an authentication system you will love. Do **not**
+    keep reading unless you want to learn the lowest level details of
+    authentication.
 
-    * :doc:`/security/guard_authentication`
-    * :doc:`/security/custom_password_authenticator`
-    * :doc:`/security/api_key_authentication`
-    * To authenticate via OAuth using a third-party service such as Google, Facebook
-      or Twitter, try using the `HWIOAuthBundle`_ community bundle.
-
-If you have read the chapter on :doc:`/security`, you understand the
-distinction Symfony makes between authentication and authorization in the
-implementation of security. This chapter discusses the core classes involved
+Symfony provides support for the most
+:doc:`common authentication mechanisms </security/auth_providers>`. However, your
+app may need to integrated with some proprietary single-sign-on system or some
+legacy authentication mechanism. In those cases you could create a custom
+authentication provider. This article discusses the core classes involved
 in the authentication process, and how to implement a custom authentication
 provider. Because authentication and authorization are separate concepts,
 this extension will be user-provider agnostic, and will function with your
@@ -28,7 +26,7 @@ wherever else you choose to store them.
 Meet WSSE
 ---------
 
-The following chapter demonstrates how to create a custom authentication
+The following article demonstrates how to create a custom authentication
 provider for WSSE authentication. The security protocol for WSSE provides
 several security benefits:
 
@@ -49,7 +47,7 @@ password digest.
 .. note::
 
     WSSE also supports application key validation, which is useful for web
-    services, but is outside the scope of this chapter.
+    services, but is outside the scope of this article.
 
 The Token
 ---------
@@ -59,12 +57,10 @@ A token represents the user authentication data present in the request. Once
 a request is authenticated, the token retains the user's data, and delivers
 this data across the security context. First, you'll create your token class.
 This will allow the passing of all relevant information to your authentication
-provider.
+provider::
 
-.. code-block:: php
-
-    // src/AppBundle/Security/Authentication/Token/WsseUserToken.php
-    namespace AppBundle\Security\Authentication\Token;
+    // src/Security/Authentication/Token/WsseUserToken.php
+    namespace App\Security\Authentication\Token;
 
     use Symfony\Component\Security\Core\Authentication\Token\AbstractToken;
 
@@ -105,12 +101,10 @@ provider. A listener must be an instance of
 :class:`Symfony\\Component\\Security\\Http\\Firewall\\ListenerInterface`.
 A security listener should handle the
 :class:`Symfony\\Component\\HttpKernel\\Event\\GetResponseEvent` event, and
-set an authenticated token in the token storage if successful.
+set an authenticated token in the token storage if successful::
 
-.. code-block:: php
-
-    // src/AppBundle/Security/Firewall/WsseListener.php
-    namespace AppBundle\Security\Firewall;
+    // src/Security/Firewall/WsseListener.php
+    namespace App\Security\Firewall;
 
     use Symfony\Component\HttpFoundation\Response;
     use Symfony\Component\HttpKernel\Event\GetResponseEvent;
@@ -118,7 +112,7 @@ set an authenticated token in the token storage if successful.
     use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
     use Symfony\Component\Security\Core\Exception\AuthenticationException;
     use Symfony\Component\Security\Http\Firewall\ListenerInterface;
-    use AppBundle\Security\Authentication\Token\WsseUserToken;
+    use App\Security\Authentication\Token\WsseUserToken;
 
     class WsseListener implements ListenerInterface
     {
@@ -135,17 +129,17 @@ set an authenticated token in the token storage if successful.
         {
             $request = $event->getRequest();
 
-            $wsseRegex = '/UsernameToken Username="([^"]+)", PasswordDigest="([^"]+)", Nonce="([a-zA-Z0-9+\/]+={0,2})", Created="([^"]+)"/';
+            $wsseRegex = '/UsernameToken Username="(?P<username>[^"]+)", PasswordDigest="(?P<digest>[^"]+)", Nonce="(?P<nonce>[a-zA-Z0-9+\/]+={0,2})", Created="(?P<created>[^"]+)"/';
             if (!$request->headers->has('x-wsse') || 1 !== preg_match($wsseRegex, $request->headers->get('x-wsse'), $matches)) {
                 return;
             }
 
             $token = new WsseUserToken();
-            $token->setUser($matches[1]);
+            $token->setUser($matches['username']);
 
-            $token->digest   = $matches[2];
-            $token->nonce    = $matches[3];
-            $token->created  = $matches[4];
+            $token->digest  = $matches['digest'];
+            $token->nonce   = $matches['nonce'];
+            $token->created = $matches['created'];
 
             try {
                 $authToken = $this->authenticationManager->authenticate($token);
@@ -201,20 +195,17 @@ The Authentication Provider
 The authentication provider will do the verification of the ``WsseUserToken``.
 Namely, the provider will verify the ``Created`` header value is valid within
 five minutes, the ``Nonce`` header value is unique within five minutes, and
-the ``PasswordDigest`` header value matches with the user's password.
+the ``PasswordDigest`` header value matches with the user's password::
 
-.. code-block:: php
-
-    // src/AppBundle/Security/Authentication/Provider/WsseProvider.php
-    namespace AppBundle\Security\Authentication\Provider;
+    // src/Security/Authentication/Provider/WsseProvider.php
+    namespace App\Security\Authentication\Provider;
 
     use Psr\Cache\CacheItemPoolInterface;
     use Symfony\Component\Security\Core\Authentication\Provider\AuthenticationProviderInterface;
     use Symfony\Component\Security\Core\User\UserProviderInterface;
     use Symfony\Component\Security\Core\Exception\AuthenticationException;
-    use Symfony\Component\Security\Core\Exception\NonceExpiredException;
     use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
-    use AppBundle\Security\Authentication\Token\WsseUserToken;
+    use App\Security\Authentication\Token\WsseUserToken;
 
     class WsseProvider implements AuthenticationProviderInterface
     {
@@ -261,13 +252,15 @@ the ``PasswordDigest`` header value matches with the user's password.
 
             // Try to fetch the cache item from pool
             $cacheItem = $this->cachePool->getItem(md5($nonce));
-            
+
             // Validate that the nonce is *not* in cache
             // if it is, this could be a replay attack
             if ($cacheItem->isHit()) {
-                throw new NonceExpiredException('Previously used nonce detected');
+                // In a real world application you should throw a custom
+                // exception extending the AuthenticationException
+                throw new AuthenticationException('Previously used nonce detected');
             }
-            
+
             // Store the item in cache for 5 minutes
             $cacheItem->set(null)->expiresAfter(300);
             $this->cachePool->save($cacheItem);
@@ -287,17 +280,10 @@ the ``PasswordDigest`` header value matches with the user's password.
 .. note::
 
     The :class:`Symfony\\Component\\Security\\Core\\Authentication\\Provider\\AuthenticationProviderInterface`
-    requires an ``authenticate`` method on the user token, and a ``supports``
+    requires an ``authenticate()`` method on the user token, and a ``supports()``
     method, which tells the authentication manager whether or not to use this
     provider for the given token. In the case of multiple providers, the
     authentication manager will then move to the next provider in the list.
-
-.. note::
-
-    While the :phpfunction:`hash_equals` function was introduced in PHP 5.6,
-    you are safe to use it with any PHP version in your Symfony application. In
-    PHP versions prior to 5.6, `Symfony Polyfill`_ (which is included in
-    Symfony) will define the function for you.
 
 The Factory
 -----------
@@ -308,18 +294,18 @@ for every firewall? The answer is by using a *factory*. A factory
 is where you hook into the Security component, telling it the name of your
 provider and any configuration options available for it. First, you must
 create a class which implements
-:class:`Symfony\\Bundle\\SecurityBundle\\DependencyInjection\\Security\\Factory\\SecurityFactoryInterface`.
+:class:`Symfony\\Bundle\\SecurityBundle\\DependencyInjection\\Security\\Factory\\SecurityFactoryInterface`::
 
-.. code-block:: php
+    // src/DependencyInjection/Security/Factory/WsseFactory.php
+    namespace App\DependencyInjection\Security\Factory;
 
-    // src/AppBundle/DependencyInjection/Security/Factory/WsseFactory.php
-    namespace AppBundle\DependencyInjection\Security\Factory;
-
+    use Symfony\Component\DependencyInjection\ChildDefinition;
     use Symfony\Component\DependencyInjection\ContainerBuilder;
     use Symfony\Component\DependencyInjection\Reference;
-    use Symfony\Component\DependencyInjection\DefinitionDecorator;
     use Symfony\Component\Config\Definition\Builder\NodeDefinition;
     use Symfony\Bundle\SecurityBundle\DependencyInjection\Security\Factory\SecurityFactoryInterface;
+    use App\Security\Authentication\Provider\WsseProvider;
+    use App\Security\Firewall\WsseListener;
 
     class WsseFactory implements SecurityFactoryInterface
     {
@@ -327,12 +313,12 @@ create a class which implements
         {
             $providerId = 'security.authentication.provider.wsse.'.$id;
             $container
-                ->setDefinition($providerId, new DefinitionDecorator('wsse.security.authentication.provider'))
-                ->replaceArgument(0, new Reference($userProvider))
+                ->setDefinition($providerId, new ChildDefinition(WsseProvider::class))
+                ->setArgument(0, new Reference($userProvider))
             ;
 
             $listenerId = 'security.authentication.listener.wsse.'.$id;
-            $listener = $container->setDefinition($listenerId, new DefinitionDecorator('wsse.security.authentication.listener'));
+            $container->setDefinition($listenerId, new ChildDefinition(WsseListener::class));
 
             return array($providerId, $listenerId, $defaultEntryPoint);
         }
@@ -355,22 +341,22 @@ create a class which implements
 The :class:`Symfony\\Bundle\\SecurityBundle\\DependencyInjection\\Security\\Factory\\SecurityFactoryInterface`
 requires the following methods:
 
-``create``
+``create()``
     Method which adds the listener and authentication provider
     to the DI container for the appropriate security context.
 
-``getPosition``
+``getPosition()``
     Returns when the provider should be called. This can be one of ``pre_auth``,
     ``form``, ``http`` or ``remember_me``.
 
-``getKey``
+``getKey()``
     Method which defines the configuration key used to reference
     the provider in the firewall configuration.
 
-``addConfiguration``
+``addConfiguration()``
     Method which is used to define the configuration
     options underneath the configuration key in your security configuration.
-    Setting configuration options are explained later in this chapter.
+    Setting configuration options are explained later in this article.
 
 .. note::
 
@@ -398,46 +384,42 @@ Configuration
 It's time to see your authentication provider in action. You will need to
 do a few things in order to make this work. The first thing is to add the
 services above to the DI container. Your factory class above makes reference
-to service ids that do not exist yet: ``wsse.security.authentication.provider`` and
-``wsse.security.authentication.listener``. It's time to define those services.
+to service ids that may not exist yet: ``App\Security\Authentication\Provider\WsseProvider`` and
+``App\Security\Firewall\WsseListener``. It's time to define those services.
 
 .. configuration-block::
 
     .. code-block:: yaml
 
-        # app/config/services.yml
+        # config/services.yaml
         services:
-            wsse.security.authentication.provider:
-                class: AppBundle\Security\Authentication\Provider\WsseProvider
+            # ...
+
+            App\Security\Authentication\Provider\WsseProvider:
                 arguments:
-                    - '' # User Provider
-                    - '@cache.app'
+                    $cachePool: '@cache.app'
                 public: false
 
-            wsse.security.authentication.listener:
-                class: AppBundle\Security\Firewall\WsseListener
+            App\Security\Firewall\WsseListener:
                 arguments: ['@security.token_storage', '@security.authentication.manager']
                 public: false
 
     .. code-block:: xml
 
-        <!-- app/config/services.xml -->
+        <!-- config/services.xml -->
         <?xml version="1.0" encoding="UTF-8" ?>
         <container xmlns="http://symfony.com/schema/dic/services"
             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
             xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/schema/dic/services/services-1.0.xsd">
 
             <services>
-                <service id="wsse.security.authentication.provider"
-                    class="AppBundle\Security\Authentication\Provider\WsseProvider"
+                <service id="App\Security\Authentication\Provider\WsseProvider"
                     public="false"
                 >
-                    <argument /> <!-- User Provider -->
-                    <argument type="service" id="cache.app"></argument>
+                    <argument key="$cachePool" type="service" id="cache.app"></argument>
                 </service>
 
-                <service id="wsse.security.authentication.listener"
-                    class="AppBundle\Security\Firewall\WsseListener"
+                <service id="App\Security\Firewall\WsseListener"
                     public="false"
                 >
                     <argument type="service" id="security.token_storage"/>
@@ -448,51 +430,40 @@ to service ids that do not exist yet: ``wsse.security.authentication.provider`` 
 
     .. code-block:: php
 
-        // app/config/services.php
-        use Symfony\Component\DependencyInjection\Definition;
+        // config/services.php
+        use App\Security\Authentication\Provider\WsseProvider;
+        use App\Security\Firewall\WsseListener;
         use Symfony\Component\DependencyInjection\Reference;
 
-        $definition = new Definition(
-            'AppBundle\Security\Authentication\Provider\WsseProvider',
-            array(
-                '', // User Provider
-                new Reference('cache.app'),
-            )
-        );
-        $definition->setPublic(false);
-        $container->setDefinition('wsse.security.authentication.provider', $definition)
+        $container->register(WsseProvider::class)
+            ->setArgument('$cachePool', new Reference('cache.app'))
+            ->setPublic(false);
 
-        $definition = new Definition(
-            'AppBundle\Security\Firewall\WsseListener',
-            array(
+        $container->register(WsseListener::class)
+            ->setArguments(array(
                 new Reference('security.token_storage'),
                 new Reference('security.authentication.manager'),
-            )
-        );
-        $definition->setPublic(false);
-        $container->setDefinition('wsse.security.authentication.listener', $definition);
+            ))
+            ->setPublic(false);
 
 Now that your services are defined, tell your security context about your
-factory in your bundle class:
+factory in the kernel::
 
-.. code-block:: php
+    // src/Kernel.php
+    namespace App;
 
-    // src/AppBundle/AppBundle.php
-    namespace AppBundle;
+    use App\DependencyInjection\Security\Factory\WsseFactory;
+    // ...
 
-    use AppBundle\DependencyInjection\Security\Factory\WsseFactory;
-    use Symfony\Component\HttpKernel\Bundle\Bundle;
-    use Symfony\Component\DependencyInjection\ContainerBuilder;
-
-    class AppBundle extends Bundle
+    class Kernel extends BaseKernel
     {
         public function build(ContainerBuilder $container)
         {
-            parent::build($container);
-
             $extension = $container->getExtension('security');
             $extension->addSecurityListenerFactory(new WsseFactory());
         }
+
+        // ...
     }
 
 You are finished! You can now define parts of your app as under WSSE protection.
@@ -501,7 +472,7 @@ You are finished! You can now define parts of your app as under WSSE protection.
 
     .. code-block:: yaml
 
-        # app/config/security.yml
+        # config/packages/security.yaml
         security:
             # ...
 
@@ -513,7 +484,7 @@ You are finished! You can now define parts of your app as under WSSE protection.
 
     .. code-block:: xml
 
-        <!-- app/config/security.xml -->
+        <!-- config/packages/security.xml -->
         <?xml version="1.0" encoding="UTF-8"?>
         <srv:container xmlns="http://symfony.com/schema/dic/security"
             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -535,7 +506,7 @@ You are finished! You can now define parts of your app as under WSSE protection.
 
     .. code-block:: php
 
-        // app/config/security.php
+        // config/packages/security.php
         $container->loadFromExtension('security', array(
             // ...
 
@@ -567,9 +538,7 @@ by default, is 5 minutes. Make this configurable, so different firewalls
 can have different timeout lengths.
 
 You will first need to edit ``WsseFactory`` and define the new option in
-the ``addConfiguration`` method.
-
-.. code-block:: php
+the ``addConfiguration()`` method::
 
     class WsseFactory implements SecurityFactoryInterface
     {
@@ -579,17 +548,17 @@ the ``addConfiguration`` method.
         {
           $node
             ->children()
-            ->scalarNode('lifetime')->defaultValue(300)
+                ->scalarNode('lifetime')->defaultValue(300)
             ->end();
         }
     }
 
-Now, in the ``create`` method of the factory, the ``$config`` argument will
+Now, in the ``create()`` method of the factory, the ``$config`` argument will
 contain a ``lifetime`` key, set to 5 minutes (300 seconds) unless otherwise
 set in the configuration. Pass this argument to your authentication provider
-in order to put it to use.
+in order to put it to use::
 
-.. code-block:: php
+    use App\Security\Authentication\Provider\WsseProvider;
 
     class WsseFactory implements SecurityFactoryInterface
     {
@@ -597,10 +566,9 @@ in order to put it to use.
         {
             $providerId = 'security.authentication.provider.wsse.'.$id;
             $container
-                ->setDefinition($providerId,
-                  new DefinitionDecorator('wsse.security.authentication.provider'))
-                ->replaceArgument(0, new Reference($userProvider))
-                ->replaceArgument(2, $config['lifetime']);
+                ->setDefinition($providerId, new ChildDefinition(WsseProvider::class))
+                ->setArgument(0, new Reference($userProvider))
+                ->setArgument(2, $config['lifetime']);
             // ...
         }
 
@@ -609,12 +577,9 @@ in order to put it to use.
 
 .. note::
 
-    You'll also need to add a third argument to the ``wsse.security.authentication.provider``
-    service configuration, which can be blank, but will be filled in with
-    the lifetime in the factory. The ``WsseProvider`` class will also now
-    need to accept a third constructor argument - the lifetime - which it
-    should use instead of the hard-coded 300 seconds. These two steps are
-    not shown here.
+    The ``WsseProvider`` class will also now need to accept a third constructor argument -
+    the lifetime - which it should use instead of the hard-coded 300 seconds. This
+    step is not shown here.
 
 The lifetime of each WSSE request is now configurable, and can be
 set to any desirable value per firewall.
@@ -623,7 +588,7 @@ set to any desirable value per firewall.
 
     .. code-block:: yaml
 
-        # app/config/security.yml
+        # config/packages/security.yaml
         security:
             # ...
 
@@ -635,7 +600,7 @@ set to any desirable value per firewall.
 
     .. code-block:: xml
 
-        <!-- app/config/security.xml -->
+        <!-- config/packages/security.xml -->
         <?xml version="1.0" encoding="UTF-8"?>
         <srv:container xmlns="http://symfony.com/schema/dic/security"
             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -654,7 +619,7 @@ set to any desirable value per firewall.
 
     .. code-block:: php
 
-        // app/config/security.php
+        // config/packages/security.php
         $container->loadFromExtension('security', array(
             // ...
 
@@ -672,8 +637,7 @@ set to any desirable value per firewall.
 The rest is up to you! Any relevant configuration items can be defined
 in the factory and consumed or passed to the other classes in the container.
 
-.. _`HWIOAuthBundle`: https://github.com/hwi/HWIOAuthBundle
+
 .. _`WSSE`: http://www.xml.com/pub/a/2003/12/17/dive.html
 .. _`nonce`: https://en.wikipedia.org/wiki/Cryptographic_nonce
 .. _`timing attacks`: https://en.wikipedia.org/wiki/Timing_attack
-.. _`Symfony Polyfill`: https://github.com/symfony/polyfill

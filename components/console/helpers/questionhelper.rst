@@ -79,7 +79,7 @@ if you want to know a bundle name, you can add this to your command::
         // ...
         $question = new Question('Please enter the name of the bundle', 'AcmeDemoBundle');
 
-        $bundle = $helper->ask($input, $output, $question);
+        $bundleName = $helper->ask($input, $output, $question);
     }
 
 The user will be asked "Please enter the name of the bundle". They can type
@@ -169,11 +169,13 @@ will be autocompleted as the user types::
     public function execute(InputInterface $input, OutputInterface $output)
     {
         // ...
+        $helper = $this->getHelper('question');
+
         $bundles = array('AcmeDemoBundle', 'AcmeBlogBundle', 'AcmeStoreBundle');
         $question = new Question('Please enter the name of a bundle', 'FooBundle');
         $question->setAutocompleterValues($bundles);
 
-        $name = $helper->ask($input, $output, $question);
+        $bundleName = $helper->ask($input, $output, $question);
     }
 
 Hiding the User's Response
@@ -188,6 +190,8 @@ convenient for passwords::
     public function execute(InputInterface $input, OutputInterface $output)
     {
         // ...
+        $helper = $this->getHelper('question');
+
         $question = new Question('What is the database password?');
         $question->setHidden(true);
         $question->setHiddenFallback(false);
@@ -205,6 +209,59 @@ convenient for passwords::
     like in the example above. In this case, a ``RuntimeException``
     would be thrown.
 
+.. note::
+
+    The ``stty`` command is used to get and set properties of the command line
+    (such as getting the number of rows and columns or hiding the input text).
+    On Windows systems, this ``stty`` command may generate gibberish output and
+    mangle the input text. If that's your case, disable it with this command::
+
+        use Symfony\Component\Console\Helper\QuestionHelper;
+        use Symfony\Component\Console\Question\ChoiceQuestion;
+
+        // ...
+        public function execute(InputInterface $input, OutputInterface $output)
+        {
+            // ...
+            $helper = $this->getHelper('question');
+            QuestionHelper::disableStty();
+
+            // ...
+        }
+
+Normalizing the Answer
+----------------------
+
+Before validating the answer, you can "normalize" it to fix minor errors or
+tweak it as needed. For instance, in a previous example you asked for the bundle
+name. In case the user adds white spaces around the name by mistake, you can
+trim the name before validating it. To do so, configure a normalizer using the
+:method:`Symfony\\Component\\Console\\Question\\Question::setNormalizer`
+method::
+
+    use Symfony\Component\Console\Question\Question;
+
+    // ...
+    public function execute(InputInterface $input, OutputInterface $output)
+    {
+        // ...
+        $helper = $this->getHelper('question');
+
+        $question = new Question('Please enter the name of the bundle', 'AcmeDemoBundle');
+        $question->setNormalizer(function ($value) {
+            // $value can be null here
+            return $value ? trim($value) : '';
+        });
+
+        $bundleName = $helper->ask($input, $output, $question);
+    }
+
+.. caution::
+
+    The normalizer is called first and the returned value is used as the input
+    of the validator. If the answer is invalid, don't throw exceptions in the
+    normalizer and let the validator handle those errors.
+
 Validating the Answer
 ---------------------
 
@@ -220,18 +277,21 @@ method::
     public function execute(InputInterface $input, OutputInterface $output)
     {
         // ...
+        $helper = $this->getHelper('question');
+
         $question = new Question('Please enter the name of the bundle', 'AcmeDemoBundle');
         $question->setValidator(function ($answer) {
-            if ('Bundle' !== substr($answer, -6)) {
+            if (!is_string($answer) || 'Bundle' !== substr($answer, -6)) {
                 throw new \RuntimeException(
                     'The name of the bundle should be suffixed with \'Bundle\''
                 );
             }
+
             return $answer;
         });
         $question->setMaxAttempts(2);
 
-        $name = $helper->ask($input, $output, $question);
+        $bundleName = $helper->ask($input, $output, $question);
     }
 
 The ``$validator`` is a callback which handles the validation. It should
@@ -262,7 +322,7 @@ You can also use a validator with a hidden question::
         $question = new Question('Please enter your password');
         $question->setValidator(function ($value) {
             if (trim($value) == '') {
-                throw new \Exception('The password can not be empty');
+                throw new \Exception('The password cannot be empty');
             }
 
             return $value;
@@ -316,3 +376,9 @@ This way you can test any user interaction (even complex ones) by passing the ap
     The :class:`Symfony\\Component\\Console\\Tester\\CommandTester` automatically
     simulates a user hitting ``ENTER`` after each input, no need for passing
     an additional input.
+
+.. caution::
+
+    On Windows systems Symfony uses a special binary to implement hidden
+    questions. This means that those questions don't use the default ``Input``
+    console object and therefore you can't test them on Windows.

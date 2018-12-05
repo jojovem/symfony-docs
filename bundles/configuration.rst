@@ -5,11 +5,12 @@
 How to Create Friendly Configuration for a Bundle
 =================================================
 
-If you open your application configuration file (usually ``app/config/config.yml``),
-you'll see a number of different configuration sections, such as ``framework``,
-``twig`` and ``doctrine``. Each of these configures a specific bundle, allowing
-you to define options at a high level and then let the bundle make all the
-low-level, complex changes based on your settings.
+If you open your main application configuration directory (usually
+``config/packages/``), you'll see a number of different files, such as
+``framework.yaml``, ``twig.yaml`` and ``doctrine.yaml``. Each of these
+configures a specific bundle, allowing you to define options at a high level and
+then let the bundle make all the low-level, complex changes based on your
+settings.
 
 For example, the following configuration tells the FrameworkBundle to enable the
 form integration, which involves the definition of quite a few services as well
@@ -43,35 +44,18 @@ as integration of other related components:
             'form' => true,
         ));
 
-.. sidebar:: Using Parameters to Configure your Bundle
-
-    If you don't have plans to share your bundle between projects, it doesn't
-    make sense to use this more advanced way of configuration. Since you use
-    the bundle only in one project, you can just change the service
-    configuration each time.
-
-    If you *do* want to be able to configure something from within
-    ``config.yml``, you can always create a parameter there and use that
-    parameter somewhere else.
-
 Using the Bundle Extension
 --------------------------
 
-The basic idea is that instead of having the user override individual
-parameters, you let the user configure just a few, specifically created,
-options. As the bundle developer, you then parse through that configuration and
-load correct services and parameters inside an "Extension" class.
-
-As an example, imagine you are creating a social bundle, which provides
-integration with Twitter and such. To be able to reuse your bundle, you have to
-make the ``client_id`` and ``client_secret`` variables configurable. Your
-bundle configuration would look like:
+Imagine you are creating a new bundle - AcmeSocialBundle - which provides
+integration with Twitter, etc. To make your bundle easy to use, you want to
+allow users to configure it with some configuration that looks like this:
 
 .. configuration-block::
 
     .. code-block:: yaml
 
-        # app/config/config.yml
+        # config/packages/acme_social.yaml
         acme_social:
             twitter:
                 client_id: 123
@@ -79,16 +63,16 @@ bundle configuration would look like:
 
     .. code-block:: xml
 
-        <!-- app/config/config.xml -->
+        <!-- config/packages/acme_social.xml -->
         <?xml version="1.0" ?>
-
         <container xmlns="http://symfony.com/schema/dic/services"
-            xmlns:acme-social="http://example.org/dic/schema/acme_social"
+            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+            xmlns:acme-social="http://example.org/schema/dic/acme_social"
             xsi:schemaLocation="http://symfony.com/schema/dic/services
                 http://symfony.com/schema/dic/services/services-1.0.xsd">
 
            <acme-social:config>
-               <twitter client-id="123" client-secret="your_secret" />
+               <acme-social:twitter client-id="123" client-secret="your_secret" />
            </acme-social:config>
 
            <!-- ... -->
@@ -96,11 +80,22 @@ bundle configuration would look like:
 
     .. code-block:: php
 
-        // app/config/config.php
+        // config/packages/acme_social.php
         $container->loadFromExtension('acme_social', array(
             'client_id'     => 123,
             'client_secret' => 'your_secret',
         ));
+
+The basic idea is that instead of having the user override individual
+parameters, you let the user configure just a few, specifically created,
+options. As the bundle developer, you then parse through that configuration and
+load correct services and parameters inside an "Extension" class.
+
+.. note::
+
+    The root key of your bundle configuration (``acme_social`` in the previous
+    example) is automatically determined from your bundle name (it's the
+    `snake case`_ of the bundle name without the ``Bundle`` suffix ).
 
 .. seealso::
 
@@ -119,7 +114,6 @@ bundle configuration would look like:
 
     For parameter handling within a dependency injection container see
     :doc:`/configuration/using_parameters_in_dic`.
-
 
 Processing the ``$configs`` Array
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -145,20 +139,20 @@ For the configuration example in the previous section, the array passed to your
     )
 
 Notice that this is an *array of arrays*, not just a single flat array of the
-configuration values. This is intentional, as it allows Symfony to parse
-several configuration resources. For example, if ``acme_social`` appears in
-another configuration file - say ``config_dev.yml`` - with different values
-beneath it, the incoming array might look like this::
+configuration values. This is intentional, as it allows Symfony to parse several
+configuration resources. For example, if ``acme_social`` appears in another
+configuration file - say ``config/packages/dev/acme_social.yaml`` - with
+different values beneath it, the incoming array might look like this::
 
     array(
-        // values from config.yml
+        // values from config/packages/acme_social.yaml
         array(
             'twitter' => array(
                 'client_id' => 123,
                 'client_secret' => 'your_secret',
             ),
         ),
-        // values from config_dev.yml
+        // values from config/packages/dev/acme_social.yaml
         array(
             'twitter' => array(
                 'client_id' => 456,
@@ -186,10 +180,9 @@ The ``Configuration`` class to handle the sample configuration looks like::
     {
         public function getConfigTreeBuilder()
         {
-            $treeBuilder = new TreeBuilder();
-            $rootNode = $treeBuilder->root('acme_social');
+            $treeBuilder = new TreeBuilder('acme_social');
 
-            $rootNode
+            $treeBuilder->getRootNode()
                 ->children()
                     ->arrayNode('twitter')
                         ->children()
@@ -203,6 +196,9 @@ The ``Configuration`` class to handle the sample configuration looks like::
             return $treeBuilder;
         }
     }
+
+.. versionadded:: 4.2
+    Not passing the root node name to ``TreeBuilder`` was deprecated in Symfony 4.2.
 
 .. seealso::
 
@@ -218,17 +214,61 @@ This class can now be used in your ``load()`` method to merge configurations and
 force validation (e.g. if an additional option was passed, an exception will be
 thrown)::
 
+    // src/Acme/SocialBundle/DependencyInjection/AcmeSocialExtension.php
     public function load(array $configs, ContainerBuilder $container)
     {
         $configuration = new Configuration();
 
         $config = $this->processConfiguration($configuration, $configs);
-        // ...
+
+        // you now have these 2 config keys
+        // $config['twitter']['client_id'] and $config['twitter']['client_secret']
     }
 
 The ``processConfiguration()`` method uses the configuration tree you've defined
 in the ``Configuration`` class to validate, normalize and merge all the
 configuration arrays together.
+
+Now, you can use the ``$config`` variable to modify a service provided by your bundle.
+For example, imagine your bundle has the following example config:
+
+.. code-block:: xml
+
+    <!-- src/Acme/SocialBundle/Resources/config/services.xml -->
+    <?xml version="1.0" encoding="UTF-8" ?>
+    <container xmlns="http://symfony.com/schema/dic/services"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://symfony.com/schema/dic/services
+            http://symfony.com/schema/dic/services/services-1.0.xsd">
+
+        <services>
+            <service id="acme.social.twitter_client" class="Acme\SocialBundle\TwitterClient">
+                <argument></argument> <!-- will be filled in with client_id dynamically -->
+                <argument></argument> <!-- will be filled in with client_secret dynamically -->
+            </service>
+        </services>
+    </container>
+
+In your extension, you can load this and dynamically set its arguments::
+
+    // src/Acme/SocialBundle/DependencyInjection/AcmeSocialExtension.php
+    // ...
+
+    use Symfony\Component\DependencyInjection\Loader\XmlFileLoader;
+    use Symfony\Component\Config\FileLocator;
+
+    public function load(array $configs, ContainerBuilder $container)
+    {
+        $loader = new XmlFileLoader($container, new FileLocator(dirname(__DIR__).'/Resources/config'));
+        $loader->load('services.xml');
+
+        $configuration = new Configuration();
+        $config = $this->processConfiguration($configuration, $configs);
+
+        $definition = $container->getDefinition('acme.social.twitter_client');
+        $definition->replaceArgument(0, $config['twitter']['client_id']);
+        $definition->replaceArgument(1, $config['twitter']['client_secret']);
+    }
 
 .. tip::
 
@@ -253,14 +293,12 @@ configuration arrays together.
         }
 
     This class uses the ``getConfiguration()`` method to get the Configuration
-    instance. You should override it if your Configuration class is not called
-    ``Configuration`` or if it is not placed in the same namespace as the
-    extension.
+    instance.
 
 .. sidebar:: Processing the Configuration yourself
 
     Using the Config component is fully optional. The ``load()`` method gets an
-    array of configuration values. You can simply parse these arrays yourself
+    array of configuration values. You can instead parse these arrays yourself
     (e.g. by overriding configurations and using :phpfunction:`isset` to check
     for the existence of a value). Be aware that it'll be very hard to support XML.
 
@@ -280,12 +318,10 @@ configuration arrays together.
 Modifying the Configuration of Another Bundle
 ---------------------------------------------
 
-If you have multiple bundles that depend on each other, it may be useful
-to allow one ``Extension`` class to modify the configuration passed to another
-bundle's ``Extension`` class, as if the end-developer has actually placed that
-configuration in their ``app/config/config.yml`` file. This can be achieved
-using a prepend extension. For more details, see
-:doc:`/bundles/prepend_extension`.
+If you have multiple bundles that depend on each other, it may be useful to
+allow one ``Extension`` class to modify the configuration passed to another
+bundle's ``Extension`` class. This can be achieved using a prepend extension.
+For more details, see :doc:`/bundles/prepend_extension`.
 
 Dump the Configuration
 ----------------------
@@ -325,7 +361,7 @@ configuration of a specific bundle. The namespace is returned from the
 :method:`Extension::getNamespace() <Symfony\\Component\\DependencyInjection\\Extension\\Extension::getNamespace>`
 method. By convention, the namespace is a URL (it doesn't have to be a valid
 URL nor does it need to exists). By default, the namespace for a bundle is
-``http://example.org/dic/schema/DI_ALIAS``, where ``DI_ALIAS`` is the DI alias of
+``http://example.org/schema/dic/DI_ALIAS``, where ``DI_ALIAS`` is the DI alias of
 the extension. You might want to change this to a more professional URL::
 
     // src/Acme/HelloBundle/DependencyInjection/AcmeHelloExtension.php
@@ -357,7 +393,7 @@ namespace is then replaced with the XSD validation base path returned from
 method. This namespace is then followed by the rest of the path from the base
 path to the file itself.
 
-By convention, the XSD file lives in the ``Resources/config/schema``, but you
+By convention, the XSD file lives in the ``Resources/config/schema/``, but you
 can place it anywhere you like. You should return this path as the base path::
 
     // src/Acme/HelloBundle/DependencyInjection/AcmeHelloExtension.php
@@ -378,9 +414,8 @@ Assuming the XSD file is called ``hello-1.0.xsd``, the schema location will be
 
 .. code-block:: xml
 
-    <!-- app/config/config.xml -->
+    <!-- config/packages/acme_hello.xml -->
     <?xml version="1.0" ?>
-
     <container xmlns="http://symfony.com/schema/dic/services"
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xmlns:acme-hello="http://acme_company.com/schema/dic/hello"
@@ -398,3 +433,4 @@ Assuming the XSD file is called ``hello-1.0.xsd``, the schema location will be
 .. _`TwigBundle Configuration`: https://github.com/symfony/symfony/blob/master/src/Symfony/Bundle/TwigBundle/DependencyInjection/Configuration.php
 .. _`XML namespace`: https://en.wikipedia.org/wiki/XML_namespace
 .. _`XML schema`: https://en.wikipedia.org/wiki/XML_schema
+.. _`snake case`: https://en.wikipedia.org/wiki/Snake_case

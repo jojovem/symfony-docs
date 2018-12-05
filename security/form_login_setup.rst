@@ -1,468 +1,318 @@
-How to Build a Traditional Login Form
-=====================================
+How to Build a Login Form
+=========================
 
-.. tip::
+.. seealso::
 
-    If you need a login form and are storing users in some sort of a database,
-    then you should consider using `FOSUserBundle`_, which helps you build
-    your ``User`` object and gives you many routes and controllers for common
-    tasks like login, registration and forgot password.
+    If you're looking for the ``form_login`` firewall option, see
+    :doc:`/security/form_login`.
 
-In this entry, you'll build a traditional login form. Of course, when the
-user logs in, you can load your users from anywhere - like the database.
-See :ref:`security-user-providers` for details.
+Ready to create a login form? First, make sure you've followed the main
+:doc:`Security Guide </security>` to install security and create your ``User``
+class.
 
-First, enable form login under your firewall:
-
-.. configuration-block::
-
-    .. code-block:: yaml
-
-        # app/config/security.yml
-        security:
-            # ...
-
-            firewalls:
-                main:
-                    anonymous: ~
-                    form_login:
-                        login_path: login
-                        check_path: login
-
-    .. code-block:: xml
-
-        <!-- app/config/security.xml -->
-        <?xml version="1.0" encoding="UTF-8"?>
-        <srv:container xmlns="http://symfony.com/schema/dic/security"
-            xmlns:srv="http://symfony.com/schema/dic/services"
-            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-            xsi:schemaLocation="http://symfony.com/schema/dic/services
-                http://symfony.com/schema/dic/services/services-1.0.xsd">
-
-            <config>
-                <firewall name="main">
-                    <anonymous />
-                    <form-login login-path="login" check-path="login" />
-                </firewall>
-            </config>
-        </srv:container>
-
-    .. code-block:: php
-
-        // app/config/security.php
-        $container->loadFromExtension('security', array(
-            'firewalls' => array(
-                'main' => array(
-                    'anonymous'  => null,
-                    'form_login' => array(
-                        'login_path' => 'login',
-                        'check_path' => 'login',
-                    ),
-                ),
-            ),
-        ));
-
-.. tip::
-
-    The ``login_path`` and ``check_path`` can also be route names (but cannot
-    have mandatory wildcards - e.g. ``/login/{foo}`` where ``foo`` has no
-    default value).
-
-Now, when the security system initiates the authentication process, it will
-redirect the user to the login form ``/login``. Implementing this login form
-visually is your job. First, create a new ``SecurityController`` inside a
-bundle::
-
-    // src/AppBundle/Controller/SecurityController.php
-    namespace AppBundle\Controller;
-
-    use Symfony\Bundle\FrameworkBundle\Controller\Controller;
-
-    class SecurityController extends Controller
-    {
-    }
-
-Next, configure the route that you earlier used under your ``form_login``
-configuration (``login``):
-
-.. configuration-block::
-
-    .. code-block:: php-annotations
-
-        // src/AppBundle/Controller/SecurityController.php
-
-        // ...
-        use Symfony\Component\HttpFoundation\Request;
-        use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
-
-        class SecurityController extends Controller
-        {
-            /**
-             * @Route("/login", name="login")
-             */
-            public function loginAction(Request $request)
-            {
-            }
-        }
-
-    .. code-block:: yaml
-
-        # app/config/routing.yml
-        login:
-            path:     /login
-            defaults: { _controller: AppBundle:Security:login }
-
-    .. code-block:: xml
-
-        <!-- app/config/routing.xml -->
-        <?xml version="1.0" encoding="UTF-8" ?>
-        <routes xmlns="http://symfony.com/schema/routing"
-            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-            xsi:schemaLocation="http://symfony.com/schema/routing
-                http://symfony.com/schema/routing/routing-1.0.xsd">
-
-            <route id="login" path="/login">
-                <default key="_controller">AppBundle:Security:login</default>
-            </route>
-        </routes>
-
-    ..  code-block:: php
-
-        // app/config/routing.php
-        use Symfony\Component\Routing\RouteCollection;
-        use Symfony\Component\Routing\Route;
-
-        $collection = new RouteCollection();
-        $collection->add('login', new Route('/login', array(
-            '_controller' => 'AppBundle:Security:login',
-        )));
-
-        return $collection;
-
-Great! Next, add the logic to ``loginAction`` that will display the login
-form::
-
-    // src/AppBundle/Controller/SecurityController.php
-
-    public function loginAction(Request $request)
-    {
-        $authenticationUtils = $this->get('security.authentication_utils');
-
-        // get the login error if there is one
-        $error = $authenticationUtils->getLastAuthenticationError();
-
-        // last username entered by the user
-        $lastUsername = $authenticationUtils->getLastUsername();
-
-        return $this->render(
-            'security/login.html.twig',
-            array(
-                // last username entered by the user
-                'last_username' => $lastUsername,
-                'error'         => $error,
-            )
-        );
-    }
-
-Don't let this controller confuse you. As you'll see in a moment, when the
-user submits the form, the security system automatically handles the form
-submission for you. If the user submits an invalid username or password,
-this controller reads the form submission error from the security system,
-so that it can be displayed back to the user.
-
-In other words, your job is to *display* the login form and any login errors
-that may have occurred, but the security system itself takes care of checking
-the submitted username and password and authenticating the user.
-
-Finally, create the template:
-
-.. configuration-block::
-
-    .. code-block:: html+twig
-
-        {# app/Resources/views/security/login.html.twig #}
-        {# ... you will probably extends your base template, like base.html.twig #}
-
-        {% if error %}
-            <div>{{ error.messageKey|trans(error.messageData, 'security') }}</div>
-        {% endif %}
-
-        <form action="{{ path('login') }}" method="post">
-            <label for="username">Username:</label>
-            <input type="text" id="username" name="_username" value="{{ last_username }}" />
-
-            <label for="password">Password:</label>
-            <input type="password" id="password" name="_password" />
-
-            {#
-                If you want to control the URL the user
-                is redirected to on success (more details below)
-                <input type="hidden" name="_target_path" value="/account" />
-            #}
-
-            <button type="submit">login</button>
-        </form>
-
-    .. code-block:: html+php
-
-        <!-- src/AppBundle/Resources/views/Security/login.html.php -->
-        <?php if ($error): ?>
-            <div><?php echo $error->getMessage() ?></div>
-        <?php endif ?>
-
-        <form action="<?php echo $view['router']->path('login') ?>" method="post">
-            <label for="username">Username:</label>
-            <input type="text" id="username" name="_username" value="<?php echo $last_username ?>" />
-
-            <label for="password">Password:</label>
-            <input type="password" id="password" name="_password" />
-
-            <!--
-                If you want to control the URL the user
-                is redirected to on success (more details below)
-                <input type="hidden" name="_target_path" value="/account" />
-            -->
-
-            <button type="submit">login</button>
-        </form>
-
-
-.. tip::
-
-    The ``error`` variable passed into the template is an instance of
-    :class:`Symfony\\Component\\Security\\Core\\Exception\\AuthenticationException`.
-    It may contain more information - or even sensitive information - about
-    the authentication failure, so use it wisely!
-
-The form can look like anything, but has a few requirements:
-
-* The form must POST to the ``login`` route, since that's what you configured
-  under the ``form_login`` key in ``security.yml``.
-
-* The username must have the name ``_username`` and the password must have
-  the name ``_password``.
-
-.. tip::
-
-    Actually, all of this can be configured under the ``form_login`` key. See
-    :ref:`reference-security-firewall-form-login` for more details.
-
-.. caution::
-
-    This login form is currently not protected against CSRF attacks. Read
-    :doc:`/security/csrf_in_login_form` on how to protect your login
-    form.
-
-And that's it! When you submit the form, the security system will automatically
-check the user's credentials and either authenticate the user or send the
-user back to the login form where the error can be displayed.
-
-To review the whole process:
-
-#. The user tries to access a resource that is protected;
-#. The firewall initiates the authentication process by redirecting the
-   user to the login form (``/login``);
-#. The ``/login`` page renders login form via the route and controller created
-   in this example;
-#. The user submits the login form to ``/login``;
-#. The security system intercepts the request, checks the user's submitted
-   credentials, authenticates the user if they are correct, and sends the
-   user back to the login form if they are not.
-
-Redirecting after Success
+Generating the Login Form
 -------------------------
 
-If the submitted credentials are correct, the user will be redirected to
-the original page that was requested (e.g. ``/admin/foo``). If the user originally
-went straight to the login page, they'll be redirected to the homepage. This
-can all be customized, allowing you to, for example, redirect the user to
-a specific URL.
+Creating a powerful login form can be bootstrapped with the ``make:auth`` command from
+`MakerBundle`_. Depending on your setup, you may be asked different questions
+and your generated code may be slightly different:
 
-For more details on this and how to customize the form login process in general,
-see :doc:`/security/form_login`.
+.. code-block:: terminal
 
-.. _security-common-pitfalls:
+    $ php bin/console make:auth
 
-Avoid Common Pitfalls
----------------------
+    What style of authentication do you want? [Empty authenticator]:
+     [0] Empty authenticator
+     [1] Login form authenticator
+    > 1
 
-When setting up your login form, watch out for a few common pitfalls.
+    The class name of the authenticator to create (e.g. AppCustomAuthenticator):
+    > LoginFormAuthenticator
 
-1. Create the Correct Routes
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    Choose a name for the controller class (e.g. SecurityController) [SecurityController]:
+    > SecurityController
 
-First, be sure that you've defined the ``/login`` route correctly and that
-it corresponds to the ``login_path`` and ``check_path`` config values.
-A misconfiguration here can mean that you're redirected to a 404 page instead
-of the login page, or that submitting the login form does nothing (you just see
-the login form over and over again).
+     created: src/Security/LoginFormAuthenticator.php
+     updated: config/packages/security.yaml
+     created: src/Controller/SecurityController.php
+     created: templates/security/login.html.twig
 
-2. Be Sure the Login Page Isn't Secure (Redirect Loop!)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. versionadded:: 1.8
+    Support for login form authentication was added to ``make:auth`` in MakerBundle 1.8.
 
-Also, be sure that the login page is accessible by anonymous users. For example,
-the following configuration - which requires the ``ROLE_ADMIN`` role for
-all URLs (including the ``/login`` URL), will cause a redirect loop:
+This generates three things: (1) a login route & controller, (2) a template that
+renders the login form and (3) a :doc:`Guard authenticator </security/guard_authentication>`
+class that processes the login submit.
+
+The ``/login`` route & controller::
+
+    // src/Controller/SecurityController.php
+    namespace App\Controller;
+
+    use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+    use Symfony\Component\HttpFoundation\Response;
+    use Symfony\Component\Routing\Annotation\Route;
+    use Symfony\Component\Security\Http\Authentication\AuthenticationUtils;
+
+    class SecurityController extends AbstractController
+    {
+        /**
+         * @Route("/login", name="app_login")
+         */
+        public function login(AuthenticationUtils $authenticationUtils): Response
+        {
+            // get the login error if there is one
+            $error = $authenticationUtils->getLastAuthenticationError();
+            // last username entered by the user
+            $lastUsername = $authenticationUtils->getLastUsername();
+
+            return $this->render('security/login.html.twig', [
+                'last_username' => $lastUsername,
+                'error' => $error
+            ]);
+        }
+    }
+
+The template has very little to do with security: it just generates a traditional
+HTML form that submits to ``/login``:
+
+.. code-block:: twig
+
+    {% extends 'base.html.twig' %}
+
+    {% block title %}Log in!{% endblock %}
+
+    {% block body %}
+    <form method="post">
+        {% if error %}
+            <div class="alert alert-danger">{{ error.messageKey|trans(error.messageData, 'security') }}</div>
+        {% endif %}
+
+        <h1 class="h3 mb-3 font-weight-normal">Please sign in</h1>
+        <label for="inputEmail" class="sr-only">Email</label>
+        <input type="email" value="{{ last_username }}" name="email" id="inputEmail" class="form-control" placeholder="Email" required autofocus>
+        <label for="inputPassword" class="sr-only">Password</label>
+        <input type="password" name="password" id="inputPassword" class="form-control" placeholder="Password" required>
+
+        <input type="hidden" name="_csrf_token"
+               value="{{ csrf_token('authenticate') }}"
+        >
+
+        {#
+            Uncomment this section and add a remember_me option below your firewall to activate remember me functionality.
+            See https://symfony.com/doc/current/security/remember_me.html
+
+            <div class="checkbox mb-3">
+                <label>
+                    <input type="checkbox" name="_remember_me"> Remember me
+                </label>
+            </div>
+        #}
+
+        <button class="btn btn-lg btn-primary" type="submit">
+            Sign in
+        </button>
+    </form>
+    {% endblock %}
+
+The Guard authenticator processes the form submit::
+
+    // src/Security/LoginFormAuthenticator.php
+    namespace App\Security;
+
+    use App\Entity\User;
+    use Doctrine\ORM\EntityManagerInterface;
+    use Symfony\Component\HttpFoundation\RedirectResponse;
+    use Symfony\Component\HttpFoundation\Request;
+    use Symfony\Component\Routing\RouterInterface;
+    use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
+    use Symfony\Component\Security\Core\Encoder\UserPasswordEncoderInterface;
+    use Symfony\Component\Security\Core\Exception\InvalidCsrfTokenException;
+    use Symfony\Component\Security\Core\Security;
+    use Symfony\Component\Security\Core\User\UserInterface;
+    use Symfony\Component\Security\Core\User\UserProviderInterface;
+    use Symfony\Component\Security\Csrf\CsrfToken;
+    use Symfony\Component\Security\Csrf\CsrfTokenManagerInterface;
+    use Symfony\Component\Security\Guard\Authenticator\AbstractFormLoginAuthenticator;
+    use Symfony\Component\Security\Http\Util\TargetPathTrait;
+
+    class LoginFormAuthenticator extends AbstractFormLoginAuthenticator
+    {
+        use TargetPathTrait;
+
+        private $entityManager;
+        private $router;
+        private $csrfTokenManager;
+        private $passwordEncoder;
+
+        public function __construct(EntityManagerInterface $entityManager, RouterInterface $router, CsrfTokenManagerInterface $csrfTokenManager, UserPasswordEncoderInterface $passwordEncoder)
+        {
+            $this->entityManager = $entityManager;
+            $this->router = $router;
+            $this->csrfTokenManager = $csrfTokenManager;
+            $this->passwordEncoder = $passwordEncoder;
+        }
+
+        public function supports(Request $request)
+        {
+            return 'app_login' === $request->attributes->get('_route')
+                && $request->isMethod('POST');
+        }
+
+        public function getCredentials(Request $request)
+        {
+            $credentials = [
+                'email' => $request->request->get('email'),
+                'password' => $request->request->get('password'),
+                'csrf_token' => $request->request->get('_csrf_token'),
+            ];
+            $request->getSession()->set(
+                Security::LAST_USERNAME,
+                $credentials['email']
+            );
+
+            return $credentials;
+        }
+
+        public function getUser($credentials, UserProviderInterface $userProvider)
+        {
+            $token = new CsrfToken('authenticate', $credentials['csrf_token']);
+            if (!$this->csrfTokenManager->isTokenValid($token)) {
+                throw new InvalidCsrfTokenException();
+            }
+
+            $user = $this->entityManager->getRepository(User::class)->findOneBy(['email' => $credentials['email']]);
+
+            if (!$user) {
+                // fail authentication with a custom error
+                throw new CustomUserMessageAuthenticationException('Email could not be found.');
+            }
+
+            return $user;
+        }
+
+        public function checkCredentials($credentials, UserInterface $user)
+        {
+            return $this->passwordEncoder->isPasswordValid($user, $credentials['password']);
+        }
+
+        public function onAuthenticationSuccess(Request $request, TokenInterface $token, $providerKey)
+        {
+            if ($targetPath = $this->getTargetPath($request->getSession(), $providerKey)) {
+                return new RedirectResponse($targetPath);
+            }
+
+            // For example : return new RedirectResponse($this->router->generate('some_route'));
+            throw new \Exception('TODO: provide a valid redirect inside '.__FILE__);
+        }
+
+        protected function getLoginUrl()
+        {
+            return $this->router->generate('app_login');
+        }
+    }
+
+Finishing the Login Form
+------------------------
+
+Woh. The ``make:auth`` command just did a *lot* of work for you. But, you're not done
+yet. First, go to ``/login`` to see the new login form. Feel free to customize this
+however you want.
+
+When you submit the form, the ``LoginFormAuthenticator`` will intercept the request,
+read the email (or whatever field you're using) & password from the form, find the
+``User`` object, validate the CSRF token and check the password.
+
+But, depending on your setup, you'll need to finish one or more TODOs before the
+whole process works. You will *at least* need to fill in *where* you want your user to
+be redirected after success:
+
+.. code-block:: diff
+
+    // src/Security/LoginFormAuthenticator.php
+
+    // ...
+    public function onAuthenticationSuccess(Request $request, TokenInterface $token, $providerKey)
+    {
+        // ...
+
+    -     throw new \Exception('TODO: provide a valid redirect inside '.__FILE__);
+    +     // redirect to some "app_homepage" route - of wherever you want
+    +     return new RedirectResponse($this->router->generate('app_homepage'));
+    }
+
+Unless you have any other TODOs in that file, that's it! If you're loading users
+from the database, make sure you've loaded some :ref:`dummy users <doctrine-fixtures>`.
+Then, try to login.
+
+If you're successful, the web debug toolbar will tell you who you are and what roles
+you have:
+
+.. image:: /_images/security/symfony_loggedin_wdt.png
+   :align: center
+
+The Guard authentication system is powerful, and you can customize your authenticator
+class to do whatever you need. To learn more about what the individual methods do,
+see :doc:`/security/guard_authentication`.
+
+Controlling Error Messages
+--------------------------
+
+You can cause authentication to fail with a custom message at any step by throwing
+a custom :class:`Symfony\\Component\\Security\\Core\\Exception\\CustomUserMessageAuthenticationException`.
+This is an easy way to control the error message.
+
+But in some cases, like if you return ``false`` from ``checkCredentials()``, you
+may see an error that comes from the core of Symfony - like ``Invalid credentials.``.
+
+To customize this message, you could throw a ``CustomUserMessageAuthenticationException``
+instead. Or, you can :doc:`translate </translation>` the message through the ``security``
+domain:
 
 .. configuration-block::
 
-    .. code-block:: yaml
-
-        # app/config/security.yml
-
-        # ...
-        access_control:
-            - { path: ^/, roles: ROLE_ADMIN }
-
     .. code-block:: xml
 
-        <!-- app/config/security.xml -->
-        <?xml version="1.0" encoding="UTF-8"?>
-        <srv:container xmlns="http://symfony.com/schema/dic/security"
-            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-            xmlns:srv="http://symfony.com/schema/dic/services"
-            xsi:schemaLocation="http://symfony.com/schema/dic/services
-                http://symfony.com/schema/dic/services/services-1.0.xsd">
-
-            <config>
-                <!-- ... -->
-                <rule path="^/" role="ROLE_ADMIN" />
-            </config>
-        </srv:container>
-
-    .. code-block:: php
-
-        // app/config/security.php
-
-        // ...
-        'access_control' => array(
-            array('path' => '^/', 'role' => 'ROLE_ADMIN'),
-        ),
-
-Adding an access control that matches ``/login/*`` and requires *no* authentication
-fixes the problem:
-
-.. configuration-block::
+        <!-- translations/security.en.xlf -->
+        <?xml version="1.0"?>
+        <xliff version="1.2" xmlns="urn:oasis:names:tc:xliff:document:1.2">
+            <file source-language="en" datatype="plaintext" original="file.ext">
+                <body>
+                    <trans-unit id="Invalid credentials.">
+                        <source>Invalid credentials.</source>
+                        <target>The password you entered was invalid!</target>
+                    </trans-unit>
+                </body>
+            </file>
+        </xliff>
 
     .. code-block:: yaml
 
-        # app/config/security.yml
-
-        # ...
-        access_control:
-            - { path: ^/login, roles: IS_AUTHENTICATED_ANONYMOUSLY }
-            - { path: ^/, roles: ROLE_ADMIN }
-
-    .. code-block:: xml
-
-        <!-- app/config/security.xml -->
-        <?xml version="1.0" encoding="UTF-8"?>
-        <srv:container xmlns="http://symfony.com/schema/dic/security"
-            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-            xmlns:srv="http://symfony.com/schema/dic/services"
-            xsi:schemaLocation="http://symfony.com/schema/dic/services
-                http://symfony.com/schema/dic/services/services-1.0.xsd">
-
-            <config>
-                <!-- ... -->
-                <rule path="^/login" role="IS_AUTHENTICATED_ANONYMOUSLY" />
-                <rule path="^/" role="ROLE_ADMIN" />
-            </config>
-        </srv:container>
+        # translations/security.en.yaml
+        'Invalid credentials.': 'The password you entered was invalid!'
 
     .. code-block:: php
 
-        // app/config/security.php
+        // translations/security.en.php
+        return array(
+            'Invalid credentials.' => 'The password you entered was invalid!',
+        );
 
-        // ...
-        'access_control' => array(
-            array('path' => '^/login', 'role' => 'IS_AUTHENTICATED_ANONYMOUSLY'),
-            array('path' => '^/', 'role' => 'ROLE_ADMIN'),
-        ),
+If the message isn't translated, make sure you've installed the ``translator``
+and try clearing your cache:
 
-Also, if your firewall does *not* allow for anonymous users (no ``anonymous``
-key), you'll need to create a special firewall that allows anonymous users
-for the login page:
+.. code-block:: terminal
 
-.. configuration-block::
+    $ php bin/console cache:clear
 
-    .. code-block:: yaml
+Redirecting to the Last Accessed Page with ``TargetPathTrait``
+--------------------------------------------------------------
 
-        # app/config/security.yml
+The last request URI is stored in a session variable named
+``_security.<your providerKey>.target_path`` (e.g. ``_security.main.target_path``
+if the name of your firewall is ``main``). Most of the times you don't have to
+deal with this low level session variable. However, the
+:class:`Symfony\\Component\\Security\\Http\\Util\\TargetPathTrait` utility
+can be used to read (like in the example above) or set this value manually.
 
-        # ...
-        firewalls:
-            # order matters! This must be before the ^/ firewall
-            login_firewall:
-                pattern:   ^/login$
-                anonymous: ~
-            secured_area:
-                pattern:    ^/
-                form_login: ~
-
-    .. code-block:: xml
-
-        <!-- app/config/security.xml -->
-        <?xml version="1.0" encoding="UTF-8"?>
-        <srv:container xmlns="http://symfony.com/schema/dic/security"
-            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-            xmlns:srv="http://symfony.com/schema/dic/services"
-            xsi:schemaLocation="http://symfony.com/schema/dic/services
-                http://symfony.com/schema/dic/services/services-1.0.xsd">
-
-            <config>
-                <!-- ... -->
-                <firewall name="login_firewall" pattern="^/login$">
-                    <anonymous />
-                </firewall>
-
-                <firewall name="secured_area" pattern="^/">
-                    <form-login />
-                </firewall>
-            </config>
-        </srv:container>
-
-    .. code-block:: php
-
-        // app/config/security.php
-
-        // ...
-        'firewalls' => array(
-            'login_firewall' => array(
-                'pattern'   => '^/login$',
-                'anonymous' => null,
-            ),
-            'secured_area' => array(
-                'pattern'    => '^/',
-                'form_login' => null,
-            ),
-        ),
-
-3. Be Sure check_path Is Behind a Firewall
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Next, make sure that your ``check_path`` URL (e.g. ``/login``) is behind
-the firewall you're using for your form login (in this example, the single
-firewall matches *all* URLs, including ``/login``). If ``/login``
-doesn't match any firewall, you'll receive a ``Unable to find the controller
-for path "/login"`` exception.
-
-4. Multiple Firewalls Don't Share the Same Security Context
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-If you're using multiple firewalls and you authenticate against one firewall,
-you will *not* be authenticated against any other firewalls automatically.
-Different firewalls are like different security systems. To do this you have
-to explicitly specify the same :ref:`reference-security-firewall-context`
-for different firewalls. But usually for most applications, having one
-main firewall is enough.
-
-5. Routing Error Pages Are not Covered by Firewalls
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-As routing is done *before* security, 404 error pages are not covered by
-any firewall. This means you can't check for security or even access the
-user object on these pages. See :doc:`/controller/error_pages`
-for more details.
-
-.. _`FOSUserBundle`: https://github.com/FriendsOfSymfony/FOSUserBundle
+.. _`MakerBundle`: https://github.com/symfony/maker-bundle

@@ -6,34 +6,17 @@ How to Embed Asynchronous Content with hinclude.js
 
 Controllers can be embedded asynchronously using the hinclude.js_ JavaScript library.
 As the embedded content comes from another page (or controller for that matter),
-Symfony uses a version of the standard ``render`` function to configure ``hinclude``
+Symfony uses a version of the standard ``render()`` function to configure ``hinclude``
 tags:
 
-.. configuration-block::
+.. code-block:: twig
 
-    .. code-block:: twig
-
-        {{ render_hinclude(controller('...')) }}
-        {{ render_hinclude(url('...')) }}
-
-    .. code-block:: php
-
-        <?php echo $view['actions']->render(
-            new ControllerReference('...'),
-            array('renderer' => 'hinclude')
-        ) ?>
-
-        <!-- The url() method was introduced in Symfony 2.8. Prior to 2.8, you
-             had to use generate() with UrlGeneratorInterface::ABSOLUTE_URL
-             passed as the third argument. -->
-        <?php echo $view['actions']->render(
-            $view['router']->url('...'),
-            array('renderer' => 'hinclude')
-        ) ?>
+    {{ render_hinclude(controller('...')) }}
+    {{ render_hinclude(url('...')) }}
 
 .. note::
 
-   hinclude.js_ needs to be included in your page to work.
+    hinclude.js_ needs to be included in your page to work.
 
 .. note::
 
@@ -44,30 +27,31 @@ tags:
 
         .. code-block:: yaml
 
-            # app/config/config.yml
+            # config/packages/framework.yaml
             framework:
                 # ...
                 fragments: { path: /_fragment }
 
         .. code-block:: xml
 
-            <!-- app/config/config.xml -->
+            <!-- config/packages/framework.xml -->
             <?xml version="1.0" encoding="UTF-8" ?>
             <container xmlns="http://symfony.com/schema/dic/services"
                 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
                 xmlns:framework="http://symfony.com/schema/dic/symfony"
-                xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/schema/dic/services/services-1.0.xsd
+                xsi:schemaLocation="http://symfony.com/schema/dic/services
+                    http://symfony.com/schema/dic/services/services-1.0.xsd
                     http://symfony.com/schema/dic/symfony http://symfony.com/schema/dic/symfony/symfony-1.0.xsd">
 
                 <!-- ... -->
                 <framework:config>
-                    <framework:fragments path="/_fragment" />
+                    <framework:fragment path="/_fragment" />
                 </framework:config>
             </container>
 
         .. code-block:: php
 
-            // app/config/config.php
+            // config/packages/framework.php
             $container->loadFromExtension('framework', array(
                 // ...
                 'fragments' => array('path' => '/_fragment'),
@@ -80,7 +64,7 @@ in your application configuration:
 
     .. code-block:: yaml
 
-        # app/config/config.yml
+        # config/packages/framework.yaml
         framework:
             # ...
             templating:
@@ -88,12 +72,13 @@ in your application configuration:
 
     .. code-block:: xml
 
-        <!-- app/config/config.xml -->
+        <!-- config/packages/framework.xml -->
         <?xml version="1.0" encoding="UTF-8" ?>
         <container xmlns="http://symfony.com/schema/dic/services"
             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
             xmlns:framework="http://symfony.com/schema/dic/symfony"
-            xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/schema/dic/services/services-1.0.xsd
+            xsi:schemaLocation="http://symfony.com/schema/dic/services
+                http://symfony.com/schema/dic/services/services-1.0.xsd
                 http://symfony.com/schema/dic/symfony http://symfony.com/schema/dic/symfony/symfony-1.0.xsd">
 
             <!-- ... -->
@@ -104,7 +89,7 @@ in your application configuration:
 
     .. code-block:: php
 
-        // app/config/config.php
+        // config/packages/framework.php
         $container->loadFromExtension('framework', array(
             // ...
             'templating' => array(
@@ -114,43 +99,19 @@ in your application configuration:
             ),
         ));
 
-You can define default templates per ``render`` function (which will override
+You can define default templates per ``render()`` function (which will override
 any global default template that is defined):
 
-.. configuration-block::
+.. code-block:: twig
 
-    .. code-block:: twig
-
-        {{ render_hinclude(controller('...'),  {
-            'default': 'default/content.html.twig'
-        }) }}
-
-    .. code-block:: php
-
-        <?php echo $view['actions']->render(
-            new ControllerReference('...'),
-            array(
-                'renderer' => 'hinclude',
-                'default'  => 'default/content.html.twig',
-            )
-        ) ?>
+    {{ render_hinclude(controller('...'),  {
+        'default': 'default/content.html.twig'
+    }) }}
 
 Or you can also specify a string to display as the default content:
 
-.. configuration-block::
+.. code-block:: twig
 
-    .. code-block:: twig
-
-        {{ render_hinclude(controller('...'), {'default': 'Loading...'}) }}
-
-    .. code-block:: php
-
-        <?php echo $view['actions']->render(
-            new ControllerReference('...'),
-            array(
-                'renderer' => 'hinclude',
-                'default'  => 'Loading...',
-            )
-        ) ?>
+    {{ render_hinclude(controller('...'), {'default': 'Loading...'}) }}
 
 .. _`hinclude.js`: http://mnot.github.io/hinclude/

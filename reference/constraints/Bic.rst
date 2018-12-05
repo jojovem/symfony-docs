@@ -26,36 +26,36 @@ will contain a Business Identifier Code (BIC).
 
     .. code-block:: php-annotations
 
-        // src/AppBundle/Entity/Transaction.php
-        namespace AppBundle\Entity;
+        // src/Entity/Transaction.php
+        namespace App\Entity;
 
         use Symfony\Component\Validator\Constraints as Assert;
 
         class Transaction
         {
             /**
-             * @Assert\Bic()
+             * @Assert\Bic
              */
             protected $businessIdentifierCode;
         }
 
     .. code-block:: yaml
 
-        # src/AppBundle/Resources/config/validation.yml
-        AppBundle\Entity\Transaction:
+        # config/validator/validation.yaml
+        App\Entity\Transaction:
             properties:
                 businessIdentifierCode:
                     - Bic: ~
 
     .. code-block:: xml
 
-        <!-- src/AppBundle/Resources/config/validation.xml -->
+        <!-- config/validator/validation.xml -->
         <?xml version="1.0" encoding="UTF-8" ?>
         <constraint-mapping xmlns="http://symfony.com/schema/dic/constraint-mapping"
             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
             xsi:schemaLocation="http://symfony.com/schema/dic/constraint-mapping http://symfony.com/schema/dic/constraint-mapping/constraint-mapping-1.0.xsd">
 
-            <class name="AppBundle\Entity\Transaction">
+            <class name="App\Entity\Transaction">
                 <property name="businessIdentifierCode">
                     <constraint name="Bic" />
                 </property>
@@ -64,8 +64,8 @@ will contain a Business Identifier Code (BIC).
 
     .. code-block:: php
 
-        // src/AppBundle/Entity/Transaction.php
-        namespace AppBundle\Entity;
+        // src/Entity/Transaction.php
+        namespace App\Entity;
 
         use Symfony\Component\Validator\Mapping\ClassMetadata;
         use Symfony\Component\Validator\Constraints as Assert;
@@ -80,6 +80,8 @@ will contain a Business Identifier Code (BIC).
             }
         }
 
+.. include:: /reference/constraints/_empty-values-are-valid.rst.inc
+
 Available Options
 -----------------
 
@@ -89,6 +91,14 @@ message
 **type**: ``string`` **default**: ``This is not a valid Business Identifier Code (BIC).``
 
 The default message supplied when the value does not pass the BIC check.
+
+You can use the following parameters in this message:
+
++------------------+------------------------------------------------+
+| Parameter        | Description                                    |
++==================+================================================+
+| ``{{ value }}``  | The current (invalid) BIC value                |
++------------------+------------------------------------------------+
 
 .. include:: /reference/constraints/_payload-option.rst.inc
 

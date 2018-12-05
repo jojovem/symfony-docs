@@ -15,15 +15,22 @@ The DomCrawler Component
 Installation
 ------------
 
-You can install the component in 2 different ways:
+.. code-block:: terminal
 
-* :doc:`Install it via Composer </components/using_components>` (``symfony/dom-crawler`` on `Packagist`_);
-* Use the official Git repository (https://github.com/symfony/dom-crawler).
+    $ composer require symfony/dom-crawler
+
+Alternatively, you can clone the `<https://github.com/symfony/dom-crawler>`_ repository.
 
 .. include:: /components/require_autoload.rst.inc
 
 Usage
 -----
+
+.. seealso::
+
+    This article explains how to use the DomCrawler features as an independent
+    component in any PHP application. Read the :ref:`Symfony Functional Tests <functional-tests>`
+    article to learn about how to use it when creating Symfony tests.
 
 The :class:`Symfony\\Component\\DomCrawler\\Crawler` class provides methods
 to query and manipulate HTML and XML documents.
@@ -68,7 +75,7 @@ tree.
 Node Filtering
 ~~~~~~~~~~~~~~
 
-Using XPath expressions is really easy::
+Using XPath expressions, you can select specific nodes within the document::
 
     $crawler = $crawler->filterXPath('descendant-or-self::body/p');
 
@@ -76,12 +83,12 @@ Using XPath expressions is really easy::
 
     ``DOMXPath::query`` is used internally to actually perform an XPath query.
 
-Filtering is even easier if you have the CssSelector component installed.
-This allows you to use jQuery-like selectors to traverse::
+If you prefer CSS selectors over XPath, install the CssSelector component.
+It allows you to use jQuery-like selectors to traverse::
 
     $crawler = $crawler->filter('body > p');
 
-Anonymous function can be used to filter with more complex criteria::
+An anonymous function can be used to filter with more complex criteria::
 
     use Symfony\Component\DomCrawler\Crawler;
     // ...
@@ -89,7 +96,7 @@ Anonymous function can be used to filter with more complex criteria::
     $crawler = $crawler
         ->filter('body > p')
         ->reduce(function (Crawler $node, $i) {
-            // filter every other node
+            // filters every other node
             return ($i % 2) == 0;
         });
 
@@ -175,6 +182,13 @@ Get all the child or parent nodes::
     $crawler->filter('body')->children();
     $crawler->filter('body > p')->parents();
 
+Get all the direct child nodes matching a CSS selector::
+
+    $crawler->filter('body')->children('p.lorem');
+
+.. versionadded:: 4.2
+    The optional selector in ``children($selector)`` method was introduced in Symfony 4.2.
+
 .. note::
 
     All the traversal methods return a new :class:`Symfony\\Component\\DomCrawler\\Crawler`
@@ -185,7 +199,7 @@ Accessing Node Values
 
 Access the node name (HTML tag name) of the first node of the current selection (eg. "p" or "div")::
 
-    // will return the node name (HTML tag name) of the first child element under <body>
+    // returns the node name (HTML tag name) of the first child element under <body>
     $tag = $crawler->filterXPath('//body/*')->nodeName();
 
 Access the value of the first node of the current selection::
@@ -200,12 +214,16 @@ Extract attribute and/or node values from the list of nodes::
 
     $attributes = $crawler
         ->filterXpath('//body/p')
-        ->extract(array('_text', 'class'))
+        ->extract(array('_name', '_text', 'class'))
     ;
 
 .. note::
 
-    Special attribute ``_text`` represents a node value.
+    Special attribute ``_text`` represents a node value, while ``_name``
+    represents the element name (the HTML tag name).
+
+    .. versionadded:: 4.3
+        The special attribute ``_name`` was introduced in Symfony 4.3.
 
 Call an anonymous function on each node of the list::
 
@@ -237,27 +255,29 @@ The crawler supports multiple ways of adding the content::
 
 .. note::
 
-    When dealing with character sets other than ISO-8859-1, always add HTML
-    content using the :method:`Symfony\\Component\\DomCrawler\\Crawler::addHtmlContent`
-    method where you can specify the second parameter to be your target character
-    set.
+    The :method:`Symfony\\Component\\DomCrawler\\Crawler::addHtmlContent` and
+    :method:`Symfony\\Component\\DomCrawler\\Crawler::addXmlContent` methods
+    default to UTF-8 encoding but you can change this behavior with their second
+    optional argument.
+
+    The :method:`Symfony\\Component\\DomCrawler\\Crawler::addContent` method
+    guesses the best charset according to the given contents and defaults to
+    ``ISO-8859-1`` in case no charset can be guessed.
 
 As the Crawler's implementation is based on the DOM extension, it is also able
 to interact with native :phpclass:`DOMDocument`, :phpclass:`DOMNodeList`
-and :phpclass:`DOMNode` objects:
+and :phpclass:`DOMNode` objects::
 
-.. code-block:: php
+    $domDocument = new \DOMDocument();
+    $domDocument->loadXml('<root><node /><node /></root>');
+    $nodeList = $domDocument->getElementsByTagName('node');
+    $node = $domDocument->getElementsByTagName('node')->item(0);
 
-    $document = new \DOMDocument();
-    $document->loadXml('<root><node /><node /></root>');
-    $nodeList = $document->getElementsByTagName('node');
-    $node = $document->getElementsByTagName('node')->item(0);
-
-    $crawler->addDocument($document);
+    $crawler->addDocument($domDocument);
     $crawler->addNodeList($nodeList);
     $crawler->addNodes(array($node));
     $crawler->addNode($node);
-    $crawler->add($document);
+    $crawler->add($domDocument);
 
 .. _component-dom-crawler-dumping:
 
@@ -282,11 +302,66 @@ and :phpclass:`DOMNode` objects:
 
         $html = $crawler->html();
 
+Expression Evaluation
+~~~~~~~~~~~~~~~~~~~~~
+
+The ``evaluate()`` method evaluates the given XPath expression. The return
+value depends on the XPath expression. If the expression evaluates to a scalar
+value (e.g. HTML attributes), an array of results will be returned. If the
+expression evaluates to a DOM document, a new ``Crawler`` instance will be
+returned.
+
+This behavior is best illustrated with examples::
+
+    use Symfony\Component\DomCrawler\Crawler;
+
+    $html = '<html>
+    <body>
+        <span id="article-100" class="article">Article 1</span>
+        <span id="article-101" class="article">Article 2</span>
+        <span id="article-102" class="article">Article 3</span>
+    </body>
+    </html>';
+
+    $crawler = new Crawler();
+    $crawler->addHtmlContent($html);
+
+    $crawler->filterXPath('//span[contains(@id, "article-")]')->evaluate('substring-after(@id, "-")');
+    /* array:3 [
+         0 => "100"
+         1 => "101"
+         2 => "102"
+       ]
+     */
+
+    $crawler->evaluate('substring-after(//span[contains(@id, "article-")]/@id, "-")');
+    /* array:1 [
+         0 => "100"
+       ]
+     */
+
+    $crawler->filterXPath('//span[@class="article"]')->evaluate('count(@id)');
+    /* array:3 [
+         0 => 1.0
+         1 => 1.0
+         2 => 1.0
+       ]
+     */
+
+    $crawler->evaluate('count(//span[@class="article"])');
+    /* array:1 [
+         0 => 3.0
+       ]
+     */
+
+    $crawler->evaluate('//span[1]');
+    // A Symfony\Component\DomCrawler\Crawler instance
+
 Links
 ~~~~~
 
 To find a link by name (or a clickable image by its ``alt`` attribute), use
-the ``selectLink`` method on an existing crawler. This returns a ``Crawler``
+the ``selectLink()`` method on an existing crawler. This returns a ``Crawler``
 instance with just the selected link(s). Calling ``link()`` gives you a special
 :class:`Symfony\\Component\\DomCrawler\\Link` object::
 
@@ -299,7 +374,7 @@ instance with just the selected link(s). Calling ``link()`` gives you a special
 The :class:`Symfony\\Component\\DomCrawler\\Link` object has several useful
 methods to get more information about the selected link itself::
 
-    // return the proper URI that can be used to make another request
+    // returns the proper URI that can be used to make another request
     $uri = $link->getUri();
 
 .. note::
@@ -331,16 +406,29 @@ Forms
 ~~~~~
 
 Special treatment is also given to forms. A ``selectButton()`` method is
-available on the Crawler which returns another Crawler that matches a button
-(``input[type=submit]``, ``input[type=image]``, or a ``button``) with the
-given text. This method is especially useful because you can use it to return
+available on the Crawler which returns another Crawler that matches ``<button>``
+or ``<input type="submit">`` or ``<input type="button">`` elements (or an
+``<img>`` element inside them). The string given as argument is looked for in
+the ``id``, ``alt``, ``name``, and ``value`` attributes and the text content of
+those elements.
+
+This method is especially useful because you can use it to return
 a :class:`Symfony\\Component\\DomCrawler\\Form` object that represents the
 form that the button lives in::
 
-    $form = $crawler->selectButton('validate')->form();
+    // button example: <button id="my-super-button" type="submit">My super button</button>
+
+    // you can get button by its label
+    $form = $crawler->selectButton('My super button')->form();
+
+    // or by button id (#my-super-button) if the button doesn't have a label
+    $form = $crawler->selectButton('my-super-button')->form();
+
+    // or you can filter the whole form, for example a form has a class attribute: <form class="form-vertical" method="POST">
+    $crawler->filter('.form-vertical')->form();
 
     // or "fill" the form fields with data
-    $form = $crawler->selectButton('validate')->form(array(
+    $form = $crawler->selectButton('my-super-button')->form(array(
         'name' => 'Ryan',
     ));
 
@@ -356,15 +444,22 @@ than just return the ``action`` attribute of the form. If the form method
 is GET, then it mimics the browser's behavior and returns the ``action``
 attribute followed by a query string of all of the form's values.
 
+.. note::
+
+    The optional ``formaction`` and ``formmethod`` button attributes are
+    supported. The ``getUri()`` and ``getMethod()`` methods take into account
+    those attributes to always return the right action and method depending on
+    the button used to get the form.
+
 You can virtually set and get values on the form::
 
-    // set values on the form internally
+    // sets values on the form internally
     $form->setValues(array(
         'registration[username]' => 'symfonyfan',
         'registration[terms]'    => 1,
     ));
 
-    // get back an array of values - in the "flat" array like above
+    // gets back an array of values - in the "flat" array like above
     $values = $form->getValues();
 
     // returns the values like PHP would see them,
@@ -381,13 +476,13 @@ To work with multi-dimensional fields::
 
 Pass an array of values::
 
-    // Set a single field
+    // sets a single field
     $form->setValues(array('multi' => array('value')));
 
-    // Set multiple fields at once
+    // sets multiple fields at once
     $form->setValues(array('multi' => array(
         1             => 'value',
-        'dimensional' => 'an other value'
+        'dimensional' => 'an other value',
     )));
 
 This is great, but it gets better! The ``Form`` object allows you to interact
@@ -396,17 +491,17 @@ and uploading files::
 
     $form['registration[username]']->setValue('symfonyfan');
 
-    // check or uncheck a checkbox
+    // checks or unchecks a checkbox
     $form['registration[terms]']->tick();
     $form['registration[terms]']->untick();
 
-    // select an option
+    // selects an option
     $form['registration[birthday][year]']->select(1984);
 
-    // select many options from a "multiple" select
+    // selects many options from a "multiple" select
     $form['registration[interests]']->select(array('symfony', 'cookies'));
 
-    // even fake a file upload
+    // fakes a file upload
     $form['registration[photo]']->upload('/path/to/lucas.jpg');
 
 Using the Form Data
@@ -435,16 +530,16 @@ directly::
 
     use Goutte\Client;
 
-    // make a real request to an external site
+    // makes a real request to an external site
     $client = new Client();
     $crawler = $client->request('GET', 'https://github.com/login');
 
     // select the form and fill in some values
-    $form = $crawler->selectButton('Log in')->form();
+    $form = $crawler->selectButton('Sign in')->form();
     $form['login'] = 'symfonyfan';
     $form['password'] = 'anypass';
 
-    // submit that form
+    // submits the given form
     $crawler = $client->submit($form);
 
 .. _components-dom-crawler-invalid:
@@ -457,10 +552,10 @@ to prevent you from setting invalid values. If you want to be able to set
 invalid values, you can use the  ``disableValidation()`` method on either
 the whole form or specific field(s)::
 
-    // Disable validation for a specific field
+    // disables validation for a specific field
     $form['country']->disableValidation()->select('Invalid value');
 
-    // Disable validation for the whole form
+    // disables validation for the whole form
     $form->disableValidation();
     $form['country']->select('Invalid value');
 

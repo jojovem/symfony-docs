@@ -53,8 +53,8 @@ example, suppose you're creating an author form where you can upload a
 "headshot" image for the author. In your form, the ``headshot`` property
 would be a ``file`` type. The ``Author`` class might look as follows::
 
-    // src/AppBundle/Entity/Author.php
-    namespace AppBundle\Entity;
+    // src/Entity/Author.php
+    namespace App\Entity;
 
     use Symfony\Component\HttpFoundation\File\File;
 
@@ -80,8 +80,8 @@ that it is between a certain size, add the following:
 
     .. code-block:: php-annotations
 
-        // src/AppBundle/Entity/Author.php
-        namespace AppBundle\Entity;
+        // src/Entity/Author.php
+        namespace App\Entity;
 
         use Symfony\Component\Validator\Constraints as Assert;
 
@@ -100,8 +100,8 @@ that it is between a certain size, add the following:
 
     .. code-block:: yaml
 
-        # src/AppBundle/Resources/config/validation.yml
-        AppBundle\Entity\Author:
+        # config/validator/validation.yaml
+        App\Entity\Author:
             properties:
                 headshot:
                     - Image:
@@ -112,13 +112,13 @@ that it is between a certain size, add the following:
 
     .. code-block:: xml
 
-        <!-- src/AppBundle/Resources/config/validation.xml -->
+        <!-- config/validator/validation.xml -->
         <?xml version="1.0" encoding="UTF-8" ?>
         <constraint-mapping xmlns="http://symfony.com/schema/dic/constraint-mapping"
             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
             xsi:schemaLocation="http://symfony.com/schema/dic/constraint-mapping http://symfony.com/schema/dic/constraint-mapping/constraint-mapping-1.0.xsd">
 
-            <class name="AppBundle\Entity\Author">
+            <class name="App\Entity\Author">
                 <property name="headshot">
                     <constraint name="Image">
                         <option name="minWidth">200</option>
@@ -132,8 +132,8 @@ that it is between a certain size, add the following:
 
     .. code-block:: php
 
-        // src/AppBundle/Entity/Author.php
-        namespace AppBundle\Entity;
+        // src/Entity/Author.php
+        namespace App\Entity;
 
         use Symfony\Component\Validator\Mapping\ClassMetadata;
         use Symfony\Component\Validator\Constraints as Assert;
@@ -162,8 +162,8 @@ following code:
 
     .. code-block:: php-annotations
 
-        // src/AppBundle/Entity/Author.php
-        namespace AppBundle\Entity;
+        // src/Entity/Author.php
+        namespace App\Entity;
 
         use Symfony\Component\Validator\Constraints as Assert;
 
@@ -180,8 +180,8 @@ following code:
 
     .. code-block:: yaml
 
-        # src/AppBundle/Resources/config/validation.yml
-        AppBundle\Entity\Author
+        # config/validator/validation.yaml
+        App\Entity\Author:
             properties:
                 headshot:
                     - Image:
@@ -190,8 +190,8 @@ following code:
 
     .. code-block:: xml
 
-        <!-- src/AppBundle/Resources/config/validation.xml -->
-        <class name="AppBundle\Entity\Author">
+        <!-- config/validator/validation.xml -->
+        <class name="App\Entity\Author">
             <property name="headshot">
                 <constraint name="Image">
                     <option name="allowLandscape">false</option>
@@ -202,8 +202,8 @@ following code:
 
     .. code-block:: php
 
-        // src/AppBundle/Entity/Author.php
-        namespace AppBundle\Entity;
+        // src/Entity/Author.php
+        namespace App\Entity;
 
         use Symfony\Component\Validator\Mapping\ClassMetadata;
         use Symfony\Component\Validator\Constraints as Assert;
@@ -274,6 +274,22 @@ maxHeight
 If set, the height of the image file must be less than or equal to this
 value in pixels.
 
+minPixels
+~~~~~~~~~
+
+**type**: ``integer``
+
+If set, the amount of pixels of the image file must be greater than or equal to this
+value.
+
+maxPixels
+~~~~~~~~~
+
+**type**: ``integer``
+
+If set, the amount of pixels of the image file must be less than or equal to this
+value.
+
 maxRatio
 ~~~~~~~~
 
@@ -296,7 +312,7 @@ allowSquare
 **type**: ``Boolean`` **default**: ``true``
 
 If this option is false, the image cannot be a square. If you want to force
-a square image, then set leave this option as its default ``true`` value
+a square image, then leave this option as its default ``true`` value
 and set `allowLandscape`_ and `allowPortrait`_ both to ``false``.
 
 allowLandscape
@@ -316,9 +332,6 @@ If this option is false, the image cannot be portrait oriented.
 detectCorrupted
 ~~~~~~~~~~~~~~~
 
-.. versionadded:: 3.1
-     The ``detectCorrupted`` option was introduced in Symfony 3.1.
-
 **type**: ``boolean`` **default**: ``false``
 
 If this option is true, the image contents are validated to ensure that the
@@ -334,6 +347,8 @@ If the system is unable to determine the size of the image, this error will
 be displayed. This will only occur when at least one of the size constraint
 options has been set.
 
+This message has no parameters.
+
 maxWidthMessage
 ~~~~~~~~~~~~~~~
 
@@ -341,6 +356,16 @@ maxWidthMessage
 Allowed maximum width is {{ max_width }}px.``
 
 The error message if the width of the image exceeds `maxWidth`_.
+
+You can use the following parameters in this message:
+
++---------------------+-----------------------------+
+| Parameter           | Description                 |
++=====================+=============================+
+| ``{{ width }}``     | The current (invalid) width |
++---------------------+-----------------------------+
+| ``{{ max_width }}`` | The maximum allowed width   |
++---------------------+-----------------------------+
 
 minWidthMessage
 ~~~~~~~~~~~~~~~
@@ -350,6 +375,16 @@ Minimum width expected is {{ min_width }}px.``
 
 The error message if the width of the image is less than `minWidth`_.
 
+You can use the following parameters in this message:
+
++---------------------+-----------------------------+
+| Parameter           | Description                 |
++=====================+=============================+
+| ``{{ width }}``     | The current (invalid) width |
++---------------------+-----------------------------+
+| ``{{ min_width }}`` | The minimum required width  |
++---------------------+-----------------------------+
+
 maxHeightMessage
 ~~~~~~~~~~~~~~~~
 
@@ -357,6 +392,16 @@ maxHeightMessage
 Allowed maximum height is {{ max_height }}px.``
 
 The error message if the height of the image exceeds `maxHeight`_.
+
+You can use the following parameters in this message:
+
++----------------------+------------------------------+
+| Parameter            | Description                  |
++======================+==============================+
+| ``{{ height }}``     | The current (invalid) height |
++----------------------+------------------------------+
+| ``{{ max_height }}`` | The maximum allowed height   |
++----------------------+------------------------------+
 
 minHeightMessage
 ~~~~~~~~~~~~~~~~
@@ -366,6 +411,60 @@ Minimum height expected is {{ min_height }}px.``
 
 The error message if the height of the image is less than `minHeight`_.
 
+You can use the following parameters in this message:
+
++----------------------+------------------------------+
+| Parameter            | Description                  |
++======================+==============================+
+| ``{{ height }}``     | The current (invalid) height |
++----------------------+------------------------------+
+| ``{{ min_height }}`` | The minimum required height  |
++----------------------+------------------------------+
+
+maxPixelsMessage
+~~~~~~~~~~~~~~~~
+
+**type**: ``string`` **default**: ``The image has to many pixels ({{ pixels }} pixels).
+Maximum amount expected is {{ max_pixels }} pixels.``
+
+The error message if the amount of pixels of the image exceeds `maxPixels`_.
+
+You can use the following parameters in this message:
+
++----------------------+---------------------------------------+
+| Parameter            | Description                           |
++======================+=======================================+
+| ``{{ pixels }}``     | The current amount of pixels          |
++----------------------+---------------------------------------+
+| ``{{ max_pixels }}`` | The maximum allowed amount of pixels  |
++----------------------+---------------------------------------+
+| ``{{ height }}``     | The current image height              |
++----------------------+---------------------------------------+
+| ``{{ width }}``      | The current image width               |
++----------------------+---------------------------------------+
+
+minPixelsMessage
+~~~~~~~~~~~~~~~~
+
+**type**: ``string`` **default**: ``The image has too few pixels ({{ pixels }} pixels).
+Minimum amount expected is {{ min_pixels }} pixels.``
+
+The error message if the amount of pixels of the image is less than `minPixels`_.
+
+You can use the following parameters in this message:
+
++----------------------+---------------------------------------+
+| Parameter            | Description                           |
++======================+=======================================+
+| ``{{ pixels }}``     | The current amount of pixels          |
++----------------------+---------------------------------------+
+| ``{{ min_pixels }}`` | The minimum required amount of pixels |
++----------------------+---------------------------------------+
+| ``{{ height }}``     | The current image height              |
++----------------------+---------------------------------------+
+| ``{{ width }}``      | The current image width               |
++----------------------+---------------------------------------+
+
 maxRatioMessage
 ~~~~~~~~~~~~~~~
 
@@ -373,6 +472,16 @@ maxRatioMessage
 Allowed maximum ratio is {{ max_ratio }}``
 
 The error message if the aspect ratio of the image exceeds `maxRatio`_.
+
+You can use the following parameters in this message:
+
++---------------------+-----------------------------+
+| Parameter           | Description                 |
++=====================+=============================+
+| ``{{ ratio }}``     | The current (invalid) ratio |
++---------------------+-----------------------------+
+| ``{{ max_ratio }}`` | The maximum allowed ratio   |
++---------------------+-----------------------------+
 
 minRatioMessage
 ~~~~~~~~~~~~~~~
@@ -382,6 +491,16 @@ Minimum ratio expected is {{ min_ratio }}``
 
 The error message if the aspect ratio of the image is less than `minRatio`_.
 
+You can use the following parameters in this message:
+
++---------------------+-----------------------------+
+| Parameter           | Description                 |
++=====================+=============================+
+| ``{{ ratio }}``     | The current (invalid) ratio |
++---------------------+-----------------------------+
+| ``{{ min_ratio }}`` | The minimum required ratio  |
++---------------------+-----------------------------+
+
 allowSquareMessage
 ~~~~~~~~~~~~~~~~~~
 
@@ -389,6 +508,16 @@ allowSquareMessage
 Square images are not allowed``
 
 The error message if the image is square and you set `allowSquare`_ to ``false``.
+
+You can use the following parameters in this message:
+
++------------------+--------------------+
+| Parameter        | Description        |
++==================+====================+
+| ``{{ width }}``  | The current width  |
++------------------+--------------------+
+| ``{{ height }}`` | The current height |
++------------------+--------------------+
 
 allowLandscapeMessage
 ~~~~~~~~~~~~~~~~~~~~~
@@ -398,6 +527,16 @@ Landscape oriented images are not allowed``
 
 The error message if the image is landscape oriented and you set `allowLandscape`_ to ``false``.
 
+You can use the following parameters in this message:
+
++------------------+--------------------+
+| Parameter        | Description        |
++==================+====================+
+| ``{{ width }}``  | The current width  |
++------------------+--------------------+
+| ``{{ height }}`` | The current height |
++------------------+--------------------+
+
 allowPortraitMessage
 ~~~~~~~~~~~~~~~~~~~~
 
@@ -406,16 +545,25 @@ Portrait oriented images are not allowed``
 
 The error message if the image is portrait oriented and you set `allowPortrait`_ to ``false``.
 
+You can use the following parameters in this message:
+
++------------------+--------------------+
+| Parameter        | Description        |
++==================+====================+
+| ``{{ width }}``  | The current width  |
++------------------+--------------------+
+| ``{{ height }}`` | The current height |
++------------------+--------------------+
+
 corruptedMessage
 ~~~~~~~~~~~~~~~~
-
-.. versionadded:: 3.1
-     The ``corruptedMessage`` option was introduced in Symfony 3.1.
 
 **type**: ``string`` **default**: ``The image file is corrupted.``
 
 The error message when the `detectCorrupted`_ option is enabled and the image
 is corrupted.
+
+This message has no parameters.
 
 .. _`IANA website`: http://www.iana.org/assignments/media-types/image/index.html
 .. _`PHP GD extension`: http://php.net/manual/en/book.image.php

@@ -1,27 +1,16 @@
-The Dependency Injection Tags
+Built-in Symfony Service Tags
 =============================
 
-Dependency Injection Tags are little strings that can be applied to a service
-to "flag" it to be used in some special way. For example, if you have a
-service that you would like to register as a listener to one of Symfony's
-core events, you can flag it with the ``kernel.event_listener`` tag.
+:doc:`Service tags </service_container/tags>` are the mechanism used by the
+:doc:`DependencyInjection component </components/dependency_injection>` to flag
+services that require special processing, like console commands or Twig extensions.
 
-You can learn a little bit more about "tags" by reading the ":doc:`/service_container/tags`"
-section of the Service Container chapter.
-
-Below is information about all of the tags available inside Symfony. There
-may also be tags in other bundles you use that aren't listed here.
+These are the most common tags provided by Symfony components, but in your
+application there could be more tags available provided by third-party bundles:
 
 ========================================  ========================================================================
 Tag Name                                  Usage
 ========================================  ========================================================================
-`assetic.asset`_                          Register an asset to the current asset manager
-`assetic.factory_worker`_                 Add a factory worker
-`assetic.filter`_                         Register a filter
-`assetic.formula_loader`_                 Add a formula loader to the current asset manager
-`assetic.formula_resource`_               Adds a resource to the current asset manager
-`assetic.templating.php`_                 Remove this service if PHP templating is disabled
-`assetic.templating.twig`_                Remove this service if Twig templating is disabled
 `auto_alias`_                             Define aliases based on the value of container parameters
 `console.command`_                        Add a command
 `controller.argument_value_resolver`_     Register a value resolver for controller arguments such as ``Request``
@@ -52,182 +41,10 @@ Tag Name                                  Usage
 `translation.dumper`_                     Register a custom service that dumps translation messages
 `twig.extension`_                         Register a custom Twig Extension
 `twig.loader`_                            Register a custom service that loads Twig templates
+`twig.runtime`_                           Register a lazy-loaded Twig Extension
 `validator.constraint_validator`_         Create your own custom validation constraint
 `validator.initializer`_                  Register a service that initializes objects before validation
 ========================================  ========================================================================
-
-assetic.asset
--------------
-
-**Purpose**: Register an asset with the current asset manager
-
-assetic.factory_worker
-----------------------
-
-**Purpose**: Add a factory worker
-
-A Factory worker is a class implementing ``Assetic\Factory\Worker\WorkerInterface``.
-Its ``process($asset)`` method is called for each asset after asset creation.
-You can modify an asset or even return a new one.
-
-In order to add a new worker, first create a class::
-
-    use Assetic\Asset\AssetInterface;
-    use Assetic\Factory\Worker\WorkerInterface;
-
-    class MyWorker implements WorkerInterface
-    {
-        public function process(AssetInterface $asset)
-        {
-            // ... change $asset or return a new one
-        }
-
-    }
-
-And then register it as a tagged service:
-
-.. configuration-block::
-
-    .. code-block:: yaml
-
-        services:
-            acme.my_worker:
-                class: MyWorker
-                tags:
-                    - { name: assetic.factory_worker }
-
-    .. code-block:: xml
-
-        <?xml version="1.0" encoding="UTF-8" ?>
-        <container xmlns="http://symfony.com/schema/dic/services"
-            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-            xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/schema/dic/services/services-1.0.xsd">
-
-            <services>
-                <service id="acme.my_worker" class="MyWorker">
-                    <tag name="assetic.factory_worker" />
-                </service>
-            </services>
-        </container>
-
-    .. code-block:: php
-
-        $container
-            ->register('acme.my_worker', 'MyWorker')
-            ->addTag('assetic.factory_worker')
-        ;
-
-assetic.filter
---------------
-
-**Purpose**: Register a filter
-
-AsseticBundle uses this tag to register common filters. You can also use
-this tag to register your own filters.
-
-First, you need to create a filter::
-
-    use Assetic\Asset\AssetInterface;
-    use Assetic\Filter\FilterInterface;
-
-    class MyFilter implements FilterInterface
-    {
-        public function filterLoad(AssetInterface $asset)
-        {
-            $asset->setContent('alert("yo");' . $asset->getContent());
-        }
-
-        public function filterDump(AssetInterface $asset)
-        {
-            // ...
-        }
-    }
-
-Second, define a service:
-
-.. configuration-block::
-
-    .. code-block:: yaml
-
-        services:
-            acme.my_filter:
-                class: MyFilter
-                tags:
-                    - { name: assetic.filter, alias: my_filter }
-
-    .. code-block:: xml
-
-        <?xml version="1.0" encoding="UTF-8" ?>
-        <container xmlns="http://symfony.com/schema/dic/services"
-            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-            xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/schema/dic/services/services-1.0.xsd">
-
-            <services>
-                <service id="acme.my_filter" class="MyFilter">
-                    <tag name="assetic.filter" alias="my_filter" />
-                </service>
-            </services>
-        </container>
-
-    .. code-block:: php
-
-        $container
-            ->register('acme.my_filter', 'MyFilter')
-            ->addTag('assetic.filter', array('alias' => 'my_filter'))
-        ;
-
-Finally, apply the filter:
-
-.. code-block:: twig
-
-    {% javascripts
-        '@AcmeBaseBundle/Resources/public/js/global.js'
-        filter='my_filter'
-    %}
-        <script src="{{ asset_url }}"></script>
-    {% endjavascripts %}
-
-You can also apply your filter via the ``assetic.filters.my_filter.apply_to``
-config option as it's described here: :doc:`/assetic/apply_to_option`.
-In order to do that, you must define your filter service in a separate xml
-config file and point to this file's path via the ``assetic.filters.my_filter.resource``
-configuration key.
-
-assetic.formula_loader
-----------------------
-
-**Purpose**: Add a formula loader to the current asset manager
-
-A Formula loader is a class implementing
-``Assetic\\Factory\Loader\\FormulaLoaderInterface`` interface. This class
-is responsible for loading assets from a particular kind of resources (for
-instance, twig template). Assetic ships loaders for PHP and Twig templates.
-
-An ``alias`` attribute defines the name of the loader.
-
-assetic.formula_resource
-------------------------
-
-**Purpose**: Adds a resource to the current asset manager
-
-A resource is something formulae can be loaded from. For instance, Twig
-templates are resources.
-
-assetic.templating.php
-----------------------
-
-**Purpose**: Remove this service if PHP templating is disabled
-
-The tagged service will be removed from the container if the
-``framework.templating.engines`` config section does not contain php.
-
-assetic.templating.twig
------------------------
-
-**Purpose**: Remove this service if Twig templating is disabled
-
-The tagged service will be removed from the container if
-``framework.templating.engines`` config section does not contain ``twig``.
 
 auto_alias
 ----------
@@ -243,13 +60,13 @@ services:
 
         services:
             app.mysql_lock:
-                class: AppBundle\Lock\MysqlLock
+                class: App\Lock\MysqlLock
                 public: false
             app.postgresql_lock:
-                class: AppBundle\Lock\PostgresqlLock
+                class: App\Lock\PostgresqlLock
                 public: false
             app.sqlite_lock:
-                class: AppBundle\Lock\SqliteLock
+                class: App\Lock\SqliteLock
                 public: false
 
     .. code-block:: xml
@@ -257,25 +74,28 @@ services:
         <?xml version="1.0" encoding="UTF-8" ?>
         <container xmlns="http://symfony.com/schema/dic/services"
             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-            xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/schema/dic/services/services-1.0.xsd">
+            xsi:schemaLocation="http://symfony.com/schema/dic/services
+                http://symfony.com/schema/dic/services/services-1.0.xsd">
 
             <services>
                 <service id="app.mysql_lock" public="false"
-                         class="AppBundle\Lock\MysqlLock" />
+                         class="App\Lock\MysqlLock" />
                 <service id="app.postgresql_lock" public="false"
-                         class="AppBundle\Lock\PostgresqlLock" />
+                         class="App\Lock\PostgresqlLock" />
                 <service id="app.sqlite_lock" public="false"
-                         class="AppBundle\Lock\SqliteLock" />
+                         class="App\Lock\SqliteLock" />
             </services>
         </container>
 
     .. code-block:: php
 
-        $container
-            ->register('app.mysql_lock', 'AppBundle\Lock\MysqlLock')->setPublic(false)
-            ->register('app.postgresql_lock', 'AppBundle\Lock\PostgresqlLock')->setPublic(false)
-            ->register('app.sqlite_lock', 'AppBundle\Lock\SqliteLock')->setPublic(false)
-        ;
+        use App\Lock\MysqlLock;
+        use App\Lock\PostgresqlLock;
+        use App\Lock\SqliteLock;
+
+        $container->register('app.mysql_lock', MysqlLock::class)->setPublic(false);
+        $container->register('app.postgresql_lock', PostgresqlLock::class)->setPublic(false);
+        $container->register('app.sqlite_lock', SqliteLock::class)->setPublic(false);
 
 Instead of dealing with these three services, your application needs a generic
 ``app.lock`` service that will be an alias to one of these services, depending on
@@ -305,15 +125,16 @@ the generic ``app.lock`` service can be defined as follows:
         <?xml version="1.0" encoding="UTF-8" ?>
         <container xmlns="http://symfony.com/schema/dic/services"
             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-            xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/schema/dic/services/services-1.0.xsd">
+            xsi:schemaLocation="http://symfony.com/schema/dic/services
+                http://symfony.com/schema/dic/services/services-1.0.xsd">
 
             <services>
                 <service id="app.mysql_lock" public="false"
-                         class="AppBundle\Lock\MysqlLock" />
+                         class="App\Lock\MysqlLock" />
                 <service id="app.postgresql_lock" public="false"
-                         class="AppBundle\Lock\PostgresqlLock" />
+                         class="App\Lock\PostgresqlLock" />
                 <service id="app.sqlite_lock" public="false"
-                         class="AppBundle\Lock\SqliteLock" />
+                         class="App\Lock\SqliteLock" />
 
                 <service id="app.lock">
                     <tag name="auto_alias" format="app.%database_type%_lock" />
@@ -323,14 +144,16 @@ the generic ``app.lock`` service can be defined as follows:
 
     .. code-block:: php
 
-        $container
-            ->register('app.mysql_lock', 'AppBundle\Lock\MysqlLock')->setPublic(false)
-            ->register('app.postgresql_lock', 'AppBundle\Lock\PostgresqlLock')->setPublic(false)
-            ->register('app.sqlite_lock', 'AppBundle\Lock\SqliteLock')->setPublic(false)
+        use App\Lock\MysqlLock;
+        use App\Lock\PostgresqlLock;
+        use App\Lock\SqliteLock;
 
-            ->register('app.lock')
-            ->addTag('auto_alias', array('format' => 'app.%database_type%_lock'))
-        ;
+        $container->register('app.mysql_lock', MysqlLock::class)->setPublic(false);
+        $container->register('app.postgresql_lock', PostgresqlLock::class)->setPublic(false);
+        $container->register('app.sqlite_lock', SqliteLock::class)->setPublic(false);
+
+        $container->register('app.lock')
+            ->addTag('auto_alias', array('format' => 'app.%database_type%_lock'));
 
 The ``format`` option defines the expression used to construct the name of the service
 to alias. This expression can use any container parameter (as usual,
@@ -343,6 +166,11 @@ wrapping their names with ``%`` characters).
     sense most of the times to prevent accessing those services directly instead
     of using the generic service alias.
 
+.. note::
+
+    You need to manually add the ``Symfony\Component\DependencyInjection\Compiler\AutoAliasServicePass``
+    compiler pass to the container for this feature to work.
+
 console.command
 ---------------
 
@@ -353,9 +181,6 @@ For details on registering your own commands in the service container, read
 
 controller.argument_value_resolver
 ----------------------------------
-
-.. versionadded:: 3.1
-    The ``controller.argument_value_resolver`` tag was introduced in Symfony 3.1.
 
 **Purpose**: Register a value resolver for controller arguments such as ``Request``
 
@@ -436,41 +261,41 @@ files during the cache clearing process.
 In order to register your custom cache clearer, first you must create a
 service class::
 
-    // src/Acme/MainBundle/Cache/MyClearer.php
-    namespace Acme\MainBundle\Cache;
+    // src/Cache/MyClearer.php
+    namespace App\Cache;
 
     use Symfony\Component\HttpKernel\CacheClearer\CacheClearerInterface;
 
     class MyClearer implements CacheClearerInterface
     {
-        public function clear($cacheDir)
+        public function clear($cacheDirectory)
         {
             // clear your cache
         }
-
     }
 
-Then register this class and tag it with ``kernel.cache_clearer``:
+If you're using the :ref:`default services.yaml configuration <service-container-services-load-example>`,
+your service will be automatically tagged with ``kernel.cache_clearer``. But, you
+can also register it manually:
 
 .. configuration-block::
 
     .. code-block:: yaml
 
         services:
-            my_cache_clearer:
-                class: Acme\MainBundle\Cache\MyClearer
-                tags:
-                    - { name: kernel.cache_clearer }
+            App\Cache\MyClearer:
+                tags: [kernel.cache_clearer]
 
     .. code-block:: xml
 
         <?xml version="1.0" encoding="UTF-8" ?>
         <container xmlns="http://symfony.com/schema/dic/services"
             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-            xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/schema/dic/services/services-1.0.xsd">
+            xsi:schemaLocation="http://symfony.com/schema/dic/services
+                http://symfony.com/schema/dic/services/services-1.0.xsd">
 
             <services>
-                <service id="my_cache_clearer" class="Acme\MainBundle\Cache\MyClearer">
+                <service id="App\Cache\MyClearer">
                     <tag name="kernel.cache_clearer" />
                 </service>
             </services>
@@ -478,8 +303,10 @@ Then register this class and tag it with ``kernel.cache_clearer``:
 
     .. code-block:: php
 
+        use App\Cache\MyClearer;
+
         $container
-            ->register('my_cache_clearer', 'Acme\MainBundle\Cache\MyClearer')
+            ->register(MyClearer::class)
             ->addTag('kernel.cache_clearer')
         ;
 
@@ -490,8 +317,9 @@ kernel.cache_warmer
 process
 
 Cache warming occurs whenever you run the ``cache:warmup`` or ``cache:clear``
-task (unless you pass ``--no-warmup`` to ``cache:clear``). It is also run
+command (unless you pass ``--no-warmup`` to ``cache:clear``). It is also run
 when handling the request, if it wasn't done by one of the commands yet.
+
 The purpose is to initialize any cache that will be needed by the application
 and prevent the first user from any significant "cache hit" where the cache
 is generated dynamically.
@@ -499,14 +327,14 @@ is generated dynamically.
 To register your own cache warmer, first create a service that implements
 the :class:`Symfony\\Component\\HttpKernel\\CacheWarmer\\CacheWarmerInterface` interface::
 
-    // src/Acme/MainBundle/Cache/MyCustomWarmer.php
-    namespace Acme\MainBundle\Cache;
+    // src/Cache/MyCustomWarmer.php
+    namespace App\Cache;
 
     use Symfony\Component\HttpKernel\CacheWarmer\CacheWarmerInterface;
 
     class MyCustomWarmer implements CacheWarmerInterface
     {
-        public function warmUp($cacheDir)
+        public function warmUp($cacheDirectory)
         {
             // ... do some sort of operations to "warm" your cache
         }
@@ -517,21 +345,21 @@ the :class:`Symfony\\Component\\HttpKernel\\CacheWarmer\\CacheWarmerInterface` i
         }
     }
 
-The ``isOptional`` method should return true if it's possible to use the
+The ``isOptional()`` method should return true if it's possible to use the
 application without calling this cache warmer. In Symfony, optional warmers
 are always executed by default (you can change this by using the
 ``--no-optional-warmers`` option when executing the command).
 
-To register your warmer with Symfony, give it the ``kernel.cache_warmer``
-tag:
+If you're using the :ref:`default services.yaml configuration <service-container-services-load-example>`,
+your service will be automatically tagged with ``kernel.cache_warmer``. But, you
+can also register it manually:
 
 .. configuration-block::
 
     .. code-block:: yaml
 
         services:
-            main.warmer.my_custom_warmer:
-                class: Acme\MainBundle\Cache\MyCustomWarmer
+            App\Cache\MyCustomWarmer:
                 tags:
                     - { name: kernel.cache_warmer, priority: 0 }
 
@@ -540,12 +368,11 @@ tag:
         <?xml version="1.0" encoding="UTF-8" ?>
         <container xmlns="http://symfony.com/schema/dic/services"
             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-            xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/schema/dic/services/services-1.0.xsd">
+            xsi:schemaLocation="http://symfony.com/schema/dic/services
+                http://symfony.com/schema/dic/services/services-1.0.xsd">
 
             <services>
-                <service id="main.warmer.my_custom_warmer"
-                    class="Acme\MainBundle\Cache\MyCustomWarmer"
-                >
+                <service id="App\Cache\MyCustomWarmer">
                     <tag name="kernel.cache_warmer" priority="0" />
                 </service>
             </services>
@@ -553,15 +380,18 @@ tag:
 
     .. code-block:: php
 
+        use App\Cache\MyCustomWarmer;
+
         $container
-            ->register('main.warmer.my_custom_warmer', 'Acme\MainBundle\Cache\MyCustomWarmer')
+            ->register(MyCustomWarmer::class)
             ->addTag('kernel.cache_warmer', array('priority' => 0))
         ;
 
 .. note::
 
-    The ``priority`` value is optional and defaults to 0. The higher the
-    priority, the sooner it gets executed.
+    The ``priority`` is optional and its value is a positive or negative integer
+    that defaults to ``0``. The higher the number, the earlier that warmers are
+    executed.
 
 .. caution::
 
@@ -610,55 +440,8 @@ kernel.event_subscriber
 
 **Purpose**: To subscribe to a set of different events/hooks in Symfony
 
-To enable a custom subscriber, add it as a regular service in one of your
-configuration and tag it with ``kernel.event_subscriber``:
-
-.. configuration-block::
-
-    .. code-block:: yaml
-
-        services:
-            kernel.subscriber.your_subscriber_name:
-                class: Fully\Qualified\Subscriber\Class\Name
-                tags:
-                    - { name: kernel.event_subscriber }
-
-    .. code-block:: xml
-
-        <?xml version="1.0" encoding="UTF-8" ?>
-        <container xmlns="http://symfony.com/schema/dic/services"
-            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-            xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/schema/dic/services/services-1.0.xsd">
-
-            <services>
-                <service
-                    id="kernel.subscriber.your_subscriber_name"
-                    class="Fully\Qualified\Subscriber\Class\Name">
-
-                    <tag name="kernel.event_subscriber" />
-                </service>
-            </services>
-        </container>
-
-    .. code-block:: php
-
-        $container
-            ->register(
-                'kernel.subscriber.your_subscriber_name',
-                'Fully\Qualified\Subscriber\Class\Name'
-            )
-            ->addTag('kernel.event_subscriber')
-        ;
-
-.. note::
-
-    Your service must implement the :class:`Symfony\\Component\\EventDispatcher\\EventSubscriberInterface`
-    interface.
-
-.. note::
-
-    If your service is created by a factory, you **MUST** correctly set
-    the ``class`` parameter for this tag to work correctly.
+This is an alternative way to create an event listener, and is the recommended
+way (instead of using ``kernel.event_listener``). See :ref:`events-subscriber`.
 
 kernel.fragment_renderer
 ------------------------
@@ -686,34 +469,35 @@ channel when injecting the logger in a service.
     .. code-block:: yaml
 
         services:
-            my_service:
-                class: Fully\Qualified\Loader\Class\Name
+            App\Log\CustomLogger:
                 arguments: ['@logger']
                 tags:
-                    - { name: monolog.logger, channel: acme }
+                    - { name: monolog.logger, channel: app }
 
     .. code-block:: xml
 
         <?xml version="1.0" encoding="UTF-8" ?>
         <container xmlns="http://symfony.com/schema/dic/services"
             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-            xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/schema/dic/services/services-1.0.xsd">
+            xsi:schemaLocation="http://symfony.com/schema/dic/services
+                http://symfony.com/schema/dic/services/services-1.0.xsd">
 
             <services>
-                <service id="my_service" class="Fully\Qualified\Loader\Class\Name">
+                <service id="App\Log\CustomLogger">
                     <argument type="service" id="logger" />
-                    <tag name="monolog.logger" channel="acme" />
+                    <tag name="monolog.logger" channel="app" />
                 </service>
             </services>
         </container>
 
     .. code-block:: php
 
-        $definition = new Definition('Fully\Qualified\Loader\Class\Name', array(
-            new Reference('logger'),
-        ));
-        $definition->addTag('monolog.logger', array('channel' => 'acme'));
-        $container->setDefinition('my_service', $definition);
+        use App\Log\CustomLogger;
+        use Symfony\Component\DependencyInjection\Reference;
+
+        $container->register(CustomLogger::class)
+            ->addArgument(new Reference('logger'))
+            ->addTag('monolog.logger', array('channel' => 'app'));
 
 .. tip::
 
@@ -743,20 +527,19 @@ You can add a processor globally:
     .. code-block:: yaml
 
         services:
-            my_service:
-                class: Monolog\Processor\IntrospectionProcessor
-                tags:
-                    - { name: monolog.processor }
+            Monolog\Processor\IntrospectionProcessor:
+                tags: [monolog.processor]
 
     .. code-block:: xml
 
         <?xml version="1.0" encoding="UTF-8" ?>
         <container xmlns="http://symfony.com/schema/dic/services"
             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-            xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/schema/dic/services/services-1.0.xsd">
+            xsi:schemaLocation="http://symfony.com/schema/dic/services
+                http://symfony.com/schema/dic/services/services-1.0.xsd">
 
             <services>
-                <service id="my_service" class="Monolog\Processor\IntrospectionProcessor">
+                <service id="Monolog\Processor\IntrospectionProcessor">
                     <tag name="monolog.processor" />
                 </service>
             </services>
@@ -764,14 +547,16 @@ You can add a processor globally:
 
     .. code-block:: php
 
+        use Monolog\Processor\IntrospectionProcessor;
+
         $container
-            ->register('my_service', 'Monolog\Processor\IntrospectionProcessor')
+            ->register(IntrospectionProcessor::class)
             ->addTag('monolog.processor')
         ;
 
 .. tip::
 
-    If your service is not a callable (using ``__invoke``) you can add the
+    If your service is not a callable (using ``__invoke()``) you can add the
     ``method`` attribute in the tag to use a specific method.
 
 You can add also a processor for a specific handler by using the ``handler``
@@ -782,8 +567,7 @@ attribute:
     .. code-block:: yaml
 
         services:
-            my_service:
-                class: Monolog\Processor\IntrospectionProcessor
+            Monolog\Processor\IntrospectionProcessor:
                 tags:
                     - { name: monolog.processor, handler: firephp }
 
@@ -792,10 +576,11 @@ attribute:
         <?xml version="1.0" encoding="UTF-8" ?>
         <container xmlns="http://symfony.com/schema/dic/services"
             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-            xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/schema/dic/services/services-1.0.xsd">
+            xsi:schemaLocation="http://symfony.com/schema/dic/services
+                http://symfony.com/schema/dic/services/services-1.0.xsd">
 
             <services>
-                <service id="my_service" class="Monolog\Processor\IntrospectionProcessor">
+                <service id="Monolog\Processor\IntrospectionProcessor">
                     <tag name="monolog.processor" handler="firephp" />
                 </service>
             </services>
@@ -803,8 +588,10 @@ attribute:
 
     .. code-block:: php
 
+        use Monolog\Processor\IntrospectionProcessor;
+
         $container
-            ->register('my_service', 'Monolog\Processor\IntrospectionProcessor')
+            ->register(IntrospectionProcessor::class)
             ->addTag('monolog.processor', array('handler' => 'firephp'))
         ;
 
@@ -817,8 +604,7 @@ You can also add a processor for a specific logging channel by using the
     .. code-block:: yaml
 
         services:
-            my_service:
-                class: Monolog\Processor\IntrospectionProcessor
+            Monolog\Processor\IntrospectionProcessor:
                 tags:
                     - { name: monolog.processor, channel: security }
 
@@ -827,10 +613,11 @@ You can also add a processor for a specific logging channel by using the
         <?xml version="1.0" encoding="UTF-8" ?>
         <container xmlns="http://symfony.com/schema/dic/services"
             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-            xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/schema/dic/services/services-1.0.xsd">
+            xsi:schemaLocation="http://symfony.com/schema/dic/services
+                http://symfony.com/schema/dic/services/services-1.0.xsd">
 
             <services>
-                <service id="my_service" class="Monolog\Processor\IntrospectionProcessor">
+                <service id="Monolog\Processor\IntrospectionProcessor">
                     <tag name="monolog.processor" channel="security" />
                 </service>
             </services>
@@ -838,8 +625,10 @@ You can also add a processor for a specific logging channel by using the
 
     .. code-block:: php
 
+        use Monolog\Processor\IntrospectionProcessor;
+
         $container
-            ->register('my_service', 'Monolog\Processor\IntrospectionProcessor')
+            ->register(IntrospectionProcessor::class)
             ->addTag('monolog.processor', array('channel' => 'security'))
         ;
 
@@ -861,23 +650,19 @@ of your configuration and tag it with ``routing.loader``:
     .. code-block:: yaml
 
         services:
-            routing.loader.your_loader_name:
-                class: Fully\Qualified\Loader\Class\Name
-                tags:
-                    - { name: routing.loader }
+            App\Routing\CustomLoader:
+                tags: [routing.loader]
 
     .. code-block:: xml
 
         <?xml version="1.0" encoding="UTF-8" ?>
         <container xmlns="http://symfony.com/schema/dic/services"
             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-            xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/schema/dic/services/services-1.0.xsd">
+            xsi:schemaLocation="http://symfony.com/schema/dic/services
+                http://symfony.com/schema/dic/services/services-1.0.xsd">
 
             <services>
-                <service
-                    id="routing.loader.your_loader_name"
-                    class="Fully\Qualified\Loader\Class\Name">
-
+                <service id="App\Routing\CustomLoader">
                     <tag name="routing.loader" />
                 </service>
             </services>
@@ -885,8 +670,10 @@ of your configuration and tag it with ``routing.loader``:
 
     .. code-block:: php
 
+        use App\Routing\CustomLoader;
+
         $container
-            ->register('routing.loader.your_loader_name', 'Fully\Qualified\Loader\Class\Name')
+            ->register(CustomLoader::class)
             ->addTag('routing.loader')
         ;
 
@@ -925,7 +712,7 @@ If your custom authentication factory extends
 :class:`Symfony\\Bundle\\SecurityBundle\\DependencyInjection\\Security\\Factory\\AbstractFactory`
 and your custom authentication listener extends
 :class:`Symfony\\Component\\Security\\Http\\Firewall\\AbstractAuthenticationListener`,
-then your custom authentication listener will automatically have this tagged
+then your custom authentication listener will automatically have this tag
 applied and it will function automatically.
 
 security.voter
@@ -933,7 +720,7 @@ security.voter
 
 **Purpose**: To add a custom voter to Symfony's authorization logic
 
-When you call ``isGranted`` on Symfony's authorization checker, a system of "voters"
+When you call ``isGranted()`` on Symfony's authorization checker, a system of "voters"
 is used behind the scenes to determine if the user should have access. The
 ``security.voter`` tag allows you to add your own custom voter to that system.
 
@@ -962,6 +749,10 @@ The class that's tagged should implement the :class:`Symfony\\Component\\Seriali
 and :class:`Symfony\\Component\\Serializer\\Normalizer\\DenormalizerInterface`.
 
 For more details, see :doc:`/serializer`.
+
+The priorities of the default normalizers can be found in the
+:method:`Symfony\\Bundle\\FrameworkBundle\\DependencyInjection\\FrameworkExtension::registerSerializerConfiguration`
+method.
 
 swiftmailer.default.plugin
 --------------------------
@@ -1000,8 +791,7 @@ templates):
     .. code-block:: yaml
 
         services:
-            templating.helper.your_helper_name:
-                class: Fully\Qualified\Helper\Class\Name
+            App\Templating\AppHelper:
                 tags:
                     - { name: templating.helper, alias: alias_name }
 
@@ -1010,13 +800,11 @@ templates):
         <?xml version="1.0" encoding="UTF-8" ?>
         <container xmlns="http://symfony.com/schema/dic/services"
             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-            xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/schema/dic/services/services-1.0.xsd">
+            xsi:schemaLocation="http://symfony.com/schema/dic/services
+                http://symfony.com/schema/dic/services/services-1.0.xsd">
 
             <services>
-                <service
-                    id="templating.helper.your_helper_name"
-                    class="Fully\Qualified\Helper\Class\Name">
-
+                <service id="App\Templating\AppHelper">
                     <tag name="templating.helper" alias="alias_name" />
                 </service>
             </services>
@@ -1024,8 +812,9 @@ templates):
 
     .. code-block:: php
 
-        $container
-            ->register('templating.helper.your_helper_name', 'Fully\Qualified\Helper\Class\Name')
+        use App\Templating\AppHelper;
+
+        $container->register(AppHelper::class)
             ->addTag('templating.helper', array('alias' => 'alias_name'))
         ;
 
@@ -1051,8 +840,7 @@ Now, register your loader as a service and tag it with ``translation.loader``:
     .. code-block:: yaml
 
         services:
-            main.translation.my_custom_loader:
-                class: Acme\MainBundle\Translation\MyCustomLoader
+            App\Translation\MyCustomLoader:
                 tags:
                     - { name: translation.loader, alias: bin }
 
@@ -1061,13 +849,11 @@ Now, register your loader as a service and tag it with ``translation.loader``:
         <?xml version="1.0" encoding="UTF-8" ?>
         <container xmlns="http://symfony.com/schema/dic/services"
             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-            xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/schema/dic/services/services-1.0.xsd">
+            xsi:schemaLocation="http://symfony.com/schema/dic/services
+                http://symfony.com/schema/dic/services/services-1.0.xsd">
 
             <services>
-                <service
-                    id="main.translation.my_custom_loader"
-                    class="Acme\MainBundle\Translation\MyCustomLoader">
-
+                <service id="App\Translation\MyCustomLoader">
                     <tag name="translation.loader" alias="bin" />
                 </service>
             </services>
@@ -1075,11 +861,10 @@ Now, register your loader as a service and tag it with ``translation.loader``:
 
     .. code-block:: php
 
+        use App\Translation\MyCustomLoader;
+
         $container
-            ->register(
-                'main.translation.my_custom_loader',
-                'Acme\MainBundle\Translation\MyCustomLoader'
-            )
+            ->register(MyCustomLoader::class)
             ->addTag('translation.loader', array('alias' => 'bin'))
         ;
 
@@ -1087,8 +872,7 @@ The ``alias`` option is required and very important: it defines the file
 "suffix" that will be used for the resource files that use this loader.
 For example, suppose you have some custom ``bin`` format that you need to
 load. If you have a ``bin`` file that contains French translations for
-the ``messages`` domain, then you might have a file
-``app/Resources/translations/messages.fr.bin``.
+the ``messages`` domain, then you might have a file ``translations/messages.fr.bin``.
 
 When Symfony tries to load the ``bin`` file, it passes the path to your
 custom loader as the ``$resource`` argument. You can then perform any logic
@@ -1097,7 +881,9 @@ you need on that file in order to load your translations.
 If you're loading translations from a database, you'll still need a resource
 file, but it might either be blank or contain a little bit of information
 about loading those resources from the database. The file is key to trigger
-the ``load`` method on your custom loader.
+the ``load()`` method on your custom loader.
+
+.. _reference-dic-tags-translation-extractor:
 
 translation.extractor
 ---------------------
@@ -1148,8 +934,7 @@ required option: ``alias``, which defines the name of the extractor::
     .. code-block:: yaml
 
         services:
-            acme_demo.translation.extractor.foo:
-                class: Acme\DemoBundle\Translation\FooExtractor
+            App\Translation\CustomExtractor:
                 tags:
                     - { name: translation.extractor, alias: foo }
 
@@ -1158,13 +943,11 @@ required option: ``alias``, which defines the name of the extractor::
         <?xml version="1.0" encoding="UTF-8" ?>
         <container xmlns="http://symfony.com/schema/dic/services"
             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-            xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/schema/dic/services/services-1.0.xsd">
+            xsi:schemaLocation="http://symfony.com/schema/dic/services
+                http://symfony.com/schema/dic/services/services-1.0.xsd">
 
             <services>
-                <service
-                    id="acme_demo.translation.extractor.foo"
-                    class="Acme\DemoBundle\Translation\FooExtractor">
-
+                <service id="App\Translation\CustomExtractor">
                     <tag name="translation.extractor" alias="foo" />
                 </service>
             </services>
@@ -1172,10 +955,9 @@ required option: ``alias``, which defines the name of the extractor::
 
     .. code-block:: php
 
-        $container->register(
-            'acme_demo.translation.extractor.foo',
-            'Acme\DemoBundle\Translation\FooExtractor'
-        )
+        use App\Translation\CustomExtractor;
+
+        $container->register(CustomExtractor::class)
             ->addTag('translation.extractor', array('alias' => 'foo'));
 
 translation.dumper
@@ -1183,9 +965,9 @@ translation.dumper
 
 **Purpose**: To register a custom service that dumps messages to a file
 
-After an `Extractor <translation.extractor>`_ has extracted all messages
-from the templates, the dumpers are executed to dump the messages to a
-translation file in a specific format.
+After a :ref:`translation extractor <reference-dic-tags-translation-extractor>`
+has extracted all messages from the templates, the dumpers are executed to dump
+the messages to a translation file in a specific format.
 
 Symfony already comes with many dumpers:
 
@@ -1209,8 +991,7 @@ This is the name that's used to determine which dumper should be used.
     .. code-block:: yaml
 
         services:
-            acme_demo.translation.dumper.json:
-                class: Acme\DemoBundle\Translation\JsonFileDumper
+            App\Translation\JsonFileDumper:
                 tags:
                     - { name: translation.dumper, alias: json }
 
@@ -1219,13 +1000,11 @@ This is the name that's used to determine which dumper should be used.
         <?xml version="1.0" encoding="UTF-8" ?>
         <container xmlns="http://symfony.com/schema/dic/services"
             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-            xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/schema/dic/services/services-1.0.xsd">
+            xsi:schemaLocation="http://symfony.com/schema/dic/services
+                http://symfony.com/schema/dic/services/services-1.0.xsd">
 
             <services>
-                <service
-                    id="acme_demo.translation.dumper.json"
-                    class="Acme\DemoBundle\Translation\JsonFileDumper">
-
+                <service id="App\Translation\JsonFileDumper">
                     <tag name="translation.dumper" alias="json" />
                 </service>
             </services>
@@ -1233,10 +1012,9 @@ This is the name that's used to determine which dumper should be used.
 
     .. code-block:: php
 
-        $container->register(
-            'acme_demo.translation.dumper.json',
-            'Acme\DemoBundle\Translation\JsonFileDumper'
-        )
+        use App\Translation\JsonFileDumper;
+
+        $container->register(JsonFileDumper::class)
             ->addTag('translation.dumper', array('alias' => 'json'));
 
 .. seealso::
@@ -1252,44 +1030,60 @@ twig.extension
 **Purpose**: To register a custom Twig Extension
 
 To enable a Twig extension, add it as a regular service in one of your
-configuration and tag it with ``twig.extension``:
+configuration and tag it with ``twig.extension``. If you're using the
+:ref:`default services.yaml configuration <service-container-services-load-example>`,
+the service is auto-registered and auto-tagged. But, you can also register it manually:
 
 .. configuration-block::
 
     .. code-block:: yaml
 
         services:
-            twig.extension.your_extension_name:
-                class: Fully\Qualified\Extension\Class\Name
-                tags:
-                    - { name: twig.extension }
+            App\Twig\AppExtension:
+                tags: [twig.extension]
+
+            # optionally you can define the priority of the extension (default = 0).
+            # Extensions with higher priorities are registered earlier. This is mostly
+            # useful to register late extensions that override other extensions.
+            App\Twig\AnotherExtension:
+                tags: [{ name: twig.extension, priority: -100 }]
 
     .. code-block:: xml
 
         <?xml version="1.0" encoding="UTF-8" ?>
         <container xmlns="http://symfony.com/schema/dic/services"
             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-            xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/schema/dic/services/services-1.0.xsd">
+            xsi:schemaLocation="http://symfony.com/schema/dic/services
+                http://symfony.com/schema/dic/services/services-1.0.xsd">
 
             <services>
-                <service
-                    id="twig.extension.your_extension_name"
-                    class="Fully\Qualified\Extension\Class\Name">
-
+                <service id="App\Twig\AppExtension">
                     <tag name="twig.extension" />
+                </service>
+
+                <service id="App\Twig\AnotherExtension">
+                    <tag name="twig.extension" priority="-100" />
                 </service>
             </services>
         </container>
 
     .. code-block:: php
 
+        use App\Twig\AppExtension;
+        use App\Twig\AnotherExtension;
+
         $container
-            ->register(
-                'twig.extension.your_extension_name',
-                'Fully\Qualified\Extension\Class\Name'
-            )
+            ->register(AppExtension::class)
             ->addTag('twig.extension')
         ;
+        $container
+            ->register(AnotherExtension::class)
+            ->addTag('twig.extension', array('priority' => -100))
+        ;
+
+.. versionadded:: 4.1
+    The ``priority`` attribute of the ``twig.extension`` tag was introduced in
+    Symfony 4.1.
 
 For information on how to create the actual Twig Extension class, see
 `Twig's documentation`_ on the topic or read the
@@ -1306,20 +1100,19 @@ also have to be added as regular services:
     .. code-block:: yaml
 
         services:
-            twig.extension.intl:
-                class: Twig_Extensions_Extension_Intl
-                tags:
-                    - { name: twig.extension }
+            Twig\Extensions\IntlExtension:
+                tags: [twig.extension]
 
     .. code-block:: xml
 
         <?xml version="1.0" encoding="UTF-8" ?>
         <container xmlns="http://symfony.com/schema/dic/services"
             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-            xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/schema/dic/services/services-1.0.xsd">
+            xsi:schemaLocation="http://symfony.com/schema/dic/services
+                http://symfony.com/schema/dic/services/services-1.0.xsd">
 
             <services>
-                <service id="twig.extension.intl" class="Twig_Extensions_Extension_Intl">
+                <service id="Twig\Extensions\IntlExtension">
                     <tag name="twig.extension" />
                 </service>
             </services>
@@ -1328,7 +1121,7 @@ also have to be added as regular services:
     .. code-block:: php
 
         $container
-            ->register('twig.extension.intl', 'Twig_Extensions_Extension_Intl')
+            ->register('Twig\Extensions\IntlExtension')
             ->addTag('twig.extension')
         ;
 
@@ -1340,15 +1133,18 @@ twig.loader
 By default, Symfony uses only one `Twig Loader`_ -
 :class:`Symfony\\Bundle\\TwigBundle\\Loader\\FilesystemLoader`. If you need
 to load Twig templates from another resource, you can create a service for
-the new loader and tag it with ``twig.loader``:
+the new loader and tag it with ``twig.loader``.
+
+If you use the :ref:`default services.yaml configuration <service-container-services-load-example>`,
+the service will be automatically tagged thanks to autoconfiguration. But, you can
+also register it manually:
 
 .. configuration-block::
 
     .. code-block:: yaml
 
         services:
-            acme.demo_bundle.loader.some_twig_loader:
-                class: Acme\DemoBundle\Loader\SomeTwigLoader
+            App\Twig\CustomLoader:
                 tags:
                     - { name: twig.loader, priority: 0 }
 
@@ -1357,13 +1153,11 @@ the new loader and tag it with ``twig.loader``:
         <?xml version="1.0" encoding="UTF-8" ?>
         <container xmlns="http://symfony.com/schema/dic/services"
             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-            xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/schema/dic/services/services-1.0.xsd">
+            xsi:schemaLocation="http://symfony.com/schema/dic/services
+                http://symfony.com/schema/dic/services/services-1.0.xsd">
 
             <services>
-                <service
-                    id="acme.demo_bundle.loader.some_twig_loader"
-                    class="Acme\DemoBundle\Loader\SomeTwigLoader">
-
+                <service id="App\Twig\CustomLoader">
                     <tag name="twig.loader" priority="0" />
                 </service>
             </services>
@@ -1371,18 +1165,62 @@ the new loader and tag it with ``twig.loader``:
 
     .. code-block:: php
 
+        use App\Twig\CustomLoader;
+
         $container
-            ->register(
-                'acme.demo_bundle.loader.some_twig_loader',
-                'Acme\DemoBundle\Loader\SomeTwigLoader'
-            )
+            ->register(CustomLoader::class)
             ->addTag('twig.loader', array('priority' => 0))
         ;
 
 .. note::
 
-    The ``priority`` value is optional and defaults to ``0``.
-    The higher priority loaders are tried first.
+    The ``priority`` is optional and its value is a positive or negative integer
+    that defaults to ``0``. Loaders with higher numbers are tried first.
+
+.. _reference-dic-tags-twig-runtime:
+
+twig.runtime
+------------
+
+**Purpose**: To register a custom Lazy-Loaded Twig Extension
+
+:ref:`Lazy-Loaded Twig Extensions <lazy-loaded-twig-extensions>` are defined as
+regular services but the need to be tagged with ``twig.runtime``. If you're using the
+:ref:`default services.yaml configuration <service-container-services-load-example>`,
+the service is auto-registered and auto-tagged. But, you can also register it manually:
+
+.. configuration-block::
+
+    .. code-block:: yaml
+
+        services:
+            App\Twig\AppExtension:
+                tags: [twig.runtime]
+
+    .. code-block:: xml
+
+        <?xml version="1.0" encoding="UTF-8" ?>
+        <container xmlns="http://symfony.com/schema/dic/services"
+            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+            xsi:schemaLocation="http://symfony.com/schema/dic/services
+                http://symfony.com/schema/dic/services/services-1.0.xsd">
+
+            <services>
+                <service id="App\Twig\AppExtension">
+                    <tag name="twig.runtime" />
+                </service>
+            </services>
+        </container>
+
+    .. code-block:: php
+
+        use App\Twig\AppExtension;
+        use App\Twig\AnotherExtension;
+
+        $container
+            ->register(AppExtension::class)
+            ->addTag('twig.runtime')
+        ;
 
 validator.constraint_validator
 ------------------------------
@@ -1408,11 +1246,11 @@ If you do need to use this tag, just make a new class that implements the
 :class:`Symfony\\Component\\Validator\\ObjectInitializerInterface` interface.
 Then, tag it with the ``validator.initializer`` tag (it has no options).
 
-For an example, see the ``EntityInitializer`` class inside the Doctrine
+For an example, see the ``DoctrineInitializer`` class inside the Doctrine
 Bridge.
 
-.. _`Twig's documentation`: http://twig.sensiolabs.org/doc/advanced.html#creating-an-extension
+.. _`Twig's documentation`: https://twig.symfony.com/doc/2.x/advanced.html#creating-an-extension
 .. _`Twig official extension repository`: https://github.com/fabpot/Twig-extensions
 .. _`KernelEvents`: https://github.com/symfony/symfony/blob/master/src/Symfony/Component/HttpKernel/KernelEvents.php
 .. _`SwiftMailer's Plugin Documentation`: http://swiftmailer.org/docs/plugins.html
-.. _`Twig Loader`: http://twig.sensiolabs.org/doc/api.html#loaders
+.. _`Twig Loader`: https://twig.symfony.com/doc/2.x/api.html#loaders

@@ -24,15 +24,14 @@ Switching a Channel to a different Handler
 ------------------------------------------
 
 Now, suppose you want to log the ``security`` channel to a different file.
-To do this, just create a new handler and configure it to log only messages
-from the ``security`` channel. You might add this in ``config.yml`` to log
-in all environments, or just ``config_prod.yml`` to happen only in ``prod``:
+To do this, create a new handler and configure it to log only messages
+from the ``security`` channel:
 
 .. configuration-block::
 
     .. code-block:: yaml
 
-        # app/config/config.yml
+        # config/packages/prod/monolog.yaml
         monolog:
             handlers:
                 security:
@@ -49,15 +48,15 @@ in all environments, or just ``config_prod.yml`` to happen only in ``prod``:
 
     .. code-block:: xml
 
-        <!-- app/config/config.xml -->
+        <!-- config/packages/prod/monolog.xml-->
         <container xmlns="http://symfony.com/schema/dic/services"
             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
             xmlns:monolog="http://symfony.com/schema/dic/monolog"
             xsi:schemaLocation="http://symfony.com/schema/dic/services
                 http://symfony.com/schema/dic/services/services-1.0.xsd
                 http://symfony.com/schema/dic/monolog
-                http://symfony.com/schema/dic/monolog/monolog-1.0.xsd"
-        >
+                http://symfony.com/schema/dic/monolog/monolog-1.0.xsd">
+
             <monolog:config>
                 <monolog:handler name="security" type="stream" path="%kernel.logs_dir%/security.log">
                     <monolog:channels>
@@ -76,7 +75,7 @@ in all environments, or just ``config_prod.yml`` to happen only in ``prod``:
 
     .. code-block:: php
 
-        // app/config/config.php
+        // config/packages/prod/monolog.php
         $container->loadFromExtension('monolog', array(
             'handlers' => array(
                 'security' => array(
@@ -138,21 +137,21 @@ You can also configure additional channels without the need to tag your services
 
     .. code-block:: yaml
 
-        # app/config/config.yml
+        # config/packages/prod/monolog.yaml
         monolog:
             channels: ['foo', 'bar']
 
     .. code-block:: xml
 
-        <!-- app/config/config.xml -->
+        <!-- config/packages/prod/monolog.xml -->
         <container xmlns="http://symfony.com/schema/dic/services"
             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
             xmlns:monolog="http://symfony.com/schema/dic/monolog"
             xsi:schemaLocation="http://symfony.com/schema/dic/services
                 http://symfony.com/schema/dic/services/services-1.0.xsd
                 http://symfony.com/schema/dic/monolog
-                http://symfony.com/schema/dic/monolog/monolog-1.0.xsd"
-        >
+                http://symfony.com/schema/dic/monolog/monolog-1.0.xsd">
+
             <monolog:config>
                 <monolog:channel>foo</monolog:channel>
                 <monolog:channel>bar</monolog:channel>
@@ -161,7 +160,7 @@ You can also configure additional channels without the need to tag your services
 
     .. code-block:: php
 
-        // app/config/config.php
+        // config/packages/prod/monolog.php
         $container->loadFromExtension('monolog', array(
             'channels' => array(
                 'foo',
@@ -169,5 +168,7 @@ You can also configure additional channels without the need to tag your services
             ),
         ));
 
-With this, you can now send log messages to the ``foo`` channel by using
-the automatically registered logger service ``monolog.logger.foo``.
+Symfony automatically registers one service per channel (in this example, the
+channel ``foo`` creates a service called ``monolog.logger.foo``). In order to
+inject this service into others, you must update the service configuration to
+:ref:`choose the specific service to inject <services-wire-specific-service>`.

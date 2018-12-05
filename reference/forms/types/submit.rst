@@ -12,7 +12,6 @@ A submit button.
 | Inherited            | - `attr`_                                                            |
 | options              | - `disabled`_                                                        |
 |                      | - `label`_                                                           |
-|                      | - `label_attr`_                                                      |
 |                      | - `label_format`_                                                    |
 |                      | - `translation_domain`_                                              |
 |                      | - `validation_groups`_                                               |
@@ -34,13 +33,25 @@ useful when :doc:`a form has multiple submit buttons </form/multiple_buttons>`::
 Inherited Options
 -----------------
 
-.. include:: /reference/forms/types/options/button_attr.rst.inc
+attr
+~~~~
+
+**type**: ``array`` **default**: ``array()``
+
+If you want to add extra attributes to the HTML representation of the button,
+you can use ``attr`` option. It's an associative array with HTML attribute
+as a key. This can be useful when you need to set a custom class for the button::
+
+    use Symfony\Component\Form\Extension\Core\Type\SubmitType;
+    // ...
+
+    $builder->add('save', SubmitType::class, array(
+        'attr' => array('class' => 'save'),
+    ));
 
 .. include:: /reference/forms/types/options/button_disabled.rst.inc
 
 .. include:: /reference/forms/types/options/button_label.rst.inc
-
-.. include:: /reference/forms/types/options/label_attr.rst.inc
 
 .. include:: /reference/forms/types/options/label_format.rst.inc
 

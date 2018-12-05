@@ -16,7 +16,7 @@ import sys, os
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
-sys.path.append(os.path.abspath('_theme/_exts'))
+sys.path.append(os.path.abspath('_themes/_exts'))
 
 # adding PhpLexer
 from sphinx.highlighting import lexers
@@ -24,6 +24,7 @@ from pygments.lexers.compiled import CLexer
 from pygments.lexers.special import TextLexer
 from pygments.lexers.text import RstLexer
 from pygments.lexers.web import PhpLexer
+from symfonycom.sphinx.lexer import TerminalLexer
 
 # -- General configuration -----------------------------------------------------
 
@@ -39,7 +40,7 @@ extensions = [
 ]
 
 # Add any paths that contain templates here, relative to this directory.
-templates_path = ['_theme/_templates']
+# templates_path = ['_theme/_templates']
 
 # The suffix of source filenames.
 source_suffix = '.rst'
@@ -108,10 +109,14 @@ lexers['php-symfony'] = PhpLexer(startinline=True)
 lexers['rst'] = RstLexer()
 lexers['varnish3'] = CLexer()
 lexers['varnish4'] = CLexer()
+lexers['terminal'] = TerminalLexer()
 
 config_block = {
+    'apache': 'Apache',
     'markdown': 'Markdown',
+    'nginx': 'Nginx',
     'rst': 'reStructuredText',
+    'terminal': 'Terminal',
     'varnish3': 'Varnish 3',
     'varnish4': 'Varnish 4'
 }
@@ -127,7 +132,8 @@ api_url = 'http://api.symfony.com/master/%s'
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-html_theme = 'classic'
+html_theme = "sphinx_rtd_theme"
+html_theme_path = ["_themes", ]
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the

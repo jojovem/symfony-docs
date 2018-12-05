@@ -10,11 +10,11 @@ Symfony versus Flat PHP
 
 If you've never used a PHP framework, aren't familiar with the
 `Model-View-Controller`_ (MVC) philosophy, or just wonder what all the *hype*
-is around Symfony, this chapter is for you. Instead of *telling* you that
+is around Symfony, this article is for you. Instead of *telling* you that
 Symfony allows you to develop faster and better software than with flat PHP,
 you'll see for yourself.
 
-In this chapter, you'll write a simple application in flat PHP, and then
+In this article, you'll write a simple application in flat PHP, and then
 refactor it to be more organized. You'll travel through time, seeing the
 decisions behind why web development has evolved over the past several years
 to where it is now.
@@ -25,7 +25,7 @@ let you take back control of your code.
 A Simple Blog in Flat PHP
 -------------------------
 
-In this chapter, you'll build the token blog application using only flat PHP.
+In this article, you'll build the token blog application using only flat PHP.
 To begin, create a single page that displays blog entries that have been
 persisted to the database. Writing in flat PHP is quick and dirty:
 
@@ -33,9 +33,9 @@ persisted to the database. Writing in flat PHP is quick and dirty:
 
     <?php
     // index.php
-    $link = new PDO("mysql:host=localhost;dbname=blog_db", 'myuser', 'mypassword');
+    $connection = new PDO("mysql:host=localhost;dbname=blog_db", 'myuser', 'mypassword');
 
-    $result = $link->query('SELECT id, title FROM post');
+    $result = $connection->query('SELECT id, title FROM post');
     ?>
 
     <!DOCTYPE html>
@@ -58,7 +58,7 @@ persisted to the database. Writing in flat PHP is quick and dirty:
     </html>
 
     <?php
-    $link = null;
+    $connection = null;
     ?>
 
 That's quick to write, fast to execute, and, as your app grows, impossible
@@ -87,20 +87,19 @@ The code can immediately gain from separating the application "logic" from
 the code that prepares the HTML "presentation"::
 
     // index.php
-    $link = new PDO("mysql:host=localhost;dbname=blog_db", 'myuser', 'mypassword');
+    $connection = new PDO("mysql:host=localhost;dbname=blog_db", 'myuser', 'mypassword');
 
-    $result = $link->query('SELECT id, title FROM post');
+    $result = $connection->query('SELECT id, title FROM post');
 
     $posts = array();
     while ($row = $result->fetch(PDO::FETCH_ASSOC)) {
         $posts[] = $row;
     }
 
-    $link = null;
+    $connection = null;
 
     // include the HTML presentation code
     require 'templates/list.php';
-
 
 The HTML code is now stored in a separate file ``templates/list.php``, which
 is primarily an HTML file that uses a template-like PHP syntax:
@@ -129,7 +128,7 @@ is primarily an HTML file that uses a template-like PHP syntax:
 
 By convention, the file that contains all the application logic - ``index.php`` -
 is known as a "controller". The term controller is a word you'll hear a lot,
-regardless of the language or framework you use. It refers simply to the area
+regardless of the language or framework you use. It refers to the area
 of *your* code that processes user input and prepares the response.
 
 In this case, the controller prepares data from the database and then includes
@@ -148,41 +147,41 @@ of the application are isolated in a new file called ``model.php``::
     // model.php
     function open_database_connection()
     {
-        $link = new PDO("mysql:host=localhost;dbname=blog_db", 'myuser', 'mypassword');
+        $connection = new PDO("mysql:host=localhost;dbname=blog_db", 'myuser', 'mypassword');
 
-        return $link;
+        return $connection;
     }
 
-    function close_database_connection(&$link)
+    function close_database_connection(&$connection)
     {
-        $link = null;
+        $connection = null;
     }
 
     function get_all_posts()
     {
-        $link = open_database_connection();
+        $connection = open_database_connection();
 
-        $result = $link->query('SELECT id, title FROM post');
+        $result = $connection->query('SELECT id, title FROM post');
 
         $posts = array();
         while ($row = $result->fetch(PDO::FETCH_ASSOC)) {
             $posts[] = $row;
         }
-        close_database_connection($link);
+        close_database_connection($connection);
 
         return $posts;
     }
 
 .. tip::
 
-   The filename ``model.php`` is used because the logic and data access of
-   an application is traditionally known as the "model" layer. In a well-organized
-   application, the majority of the code representing your "business logic"
-   should live in the model (as opposed to living in a controller). And unlike
-   in this example, only a portion (or none) of the model is actually concerned
-   with accessing a database.
+    The filename ``model.php`` is used because the logic and data access of
+    an application is traditionally known as the "model" layer. In a well-organized
+    application, the majority of the code representing your "business logic"
+    should live in the model (as opposed to living in a controller). And unlike
+    in this example, only a portion (or none) of the model is actually concerned
+    with accessing a database.
 
-The controller (``index.php``) is now very simple::
+The controller (``index.php``) is now is just a few lines of code::
 
     // index.php
     require_once 'model.php';
@@ -193,7 +192,7 @@ The controller (``index.php``) is now very simple::
 
 Now, the sole task of the controller is to get data from the model layer of
 the application (the model) and to call a template to render that data.
-This is a very simple example of the model-view-controller pattern.
+This is a very concise example of the model-view-controller pattern.
 
 Isolating the Layout
 ~~~~~~~~~~~~~~~~~~~~
@@ -261,16 +260,16 @@ an individual blog result based on a given id::
     // model.php
     function get_post_by_id($id)
     {
-        $link = open_database_connection();
+        $connection = open_database_connection();
 
         $query = 'SELECT created_at, title, body FROM post WHERE  id=:id';
-        $statement = $link->prepare($query);
+        $statement = $connection->prepare($query);
         $statement->bindValue(':id', $id, PDO::PARAM_INT);
         $statement->execute();
 
         $row = $statement->fetch(PDO::FETCH_ASSOC);
 
-        close_database_connection($link);
+        close_database_connection($connection);
 
         return $row;
     }
@@ -304,7 +303,7 @@ the individual blog post:
 
     <?php include 'layout.php' ?>
 
-Creating the second page is now very easy and no code is duplicated. Still,
+Creating the second page now requires very little work and no code is duplicated. Still,
 this page introduces even more lingering problems that a framework can solve
 for you. For example, a missing or invalid ``id`` query parameter will cause
 the page to crash. It would be better if this caused a 404 page to be rendered,
@@ -370,7 +369,7 @@ on the requested URI::
         echo '<html><body><h1>Page Not Found</h1></body></html>';
     }
 
-For organization, both controllers (formerly ``index.php`` and ``show.php``)
+For organization, both controllers (formerly ``/index.php`` and ``/index.php/show``)
 are now PHP functions and each has been moved into a separate file named ``controllers.php``::
 
     // controllers.php
@@ -392,16 +391,16 @@ one of the two controllers (the ``list_action()`` and ``show_action()``
 functions) is called. In reality, the front controller is beginning to look and
 act a lot like how Symfony handles and routes requests.
 
-But but careful not to confuse the terms *front controller* and *controller*. Your
+But be careful not to confuse the terms *front controller* and *controller*. Your
 app will usually have just *one* front controller, which boots your code. You will
 have *many* controller functions: one for each page.
 
 .. tip::
 
-   Another advantage of a front controller is flexible URLs. Notice that
-   the URL to the blog post show page could be changed from ``/show`` to ``/read``
-   by changing code in only one location. Before, an entire file needed to
-   be renamed. In Symfony, URLs are even more flexible.
+    Another advantage of a front controller is flexible URLs. Notice that
+    the URL to the blog post show page could be changed from ``/show`` to ``/read``
+    by changing code in only one location. Before, an entire file needed to
+    be renamed. In Symfony, URLs are even more flexible.
 
 By now, the application has evolved from a single PHP file into a structure
 that is organized and allows for code reuse. You should be happier, but far
@@ -431,7 +430,7 @@ content:
 
     {
         "require": {
-            "symfony/symfony": "3.1.*"
+            "symfony/http-foundation": "^4.0"
         },
         "autoload": {
             "files": ["model.php","controllers.php"]
@@ -441,7 +440,7 @@ content:
 Next, `download Composer`_ and then run the following command, which will download Symfony
 into a ``vendor/`` directory:
 
-.. code-block:: bash
+.. code-block:: terminal
 
     $ composer install
 
@@ -534,35 +533,33 @@ a simple application. Along the way, you've made a simple routing
 system and a method using ``ob_start()`` and ``ob_get_clean()`` to render
 templates. If, for some reason, you needed to continue building this "framework"
 from scratch, you could at least use Symfony's standalone
-:doc:`Routing </components/routing>` and
-:doc:`Templating </components/templating>` components, which already
-solve these problems.
+:doc:`Routing </components/routing>` and component and :doc:`Twig </templating>`,
+which already solve these problems.
 
 Instead of re-solving common problems, you can let Symfony take care of
 them for you. Here's the same sample application, now built in Symfony::
 
-    // src/AppBundle/Controller/BlogController.php
-    namespace AppBundle\Controller;
+    // src/Controller/BlogController.php
+    namespace App\Controller;
 
-    use Symfony\Bundle\FrameworkBundle\Controller\Controller;
+    use App\Entity\Post;
+    use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 
-    class BlogController extends Controller
+    class BlogController extends AbstractController
     {
-        public function listAction()
+        public function list()
         {
-            $posts = $this->get('doctrine')
-                ->getManager()
-                ->createQuery('SELECT p FROM AppBundle:Post p')
-                ->execute();
+            $posts = $this->getDoctrine()
+                ->getRepository(Post::class)
+                ->findAll();
 
-            return $this->render('Blog/list.html.php', array('posts' => $posts));
+            return $this->render('blog/list.html.twig', ['posts' => $posts]);
         }
 
-        public function showAction($id)
+        public function show($id)
         {
-            $post = $this->get('doctrine')
-                ->getManager()
-                ->getRepository('AppBundle:Post')
+            $post = $this->getDoctrine()
+                ->getRepository(Post::class)
                 ->find($id);
 
             if (!$post) {
@@ -570,7 +567,7 @@ them for you. Here's the same sample application, now built in Symfony::
                 throw $this->createNotFoundException();
             }
 
-            return $this->render('Blog/show.html.php', array('post' => $post));
+            return $this->render('blog/show.html.twig', ['post' => $post]);
         }
     }
 
@@ -581,79 +578,79 @@ nice way to group related pages. The controller functions are also sometimes cal
 The two controllers (or actions) are still lightweight. Each uses the
 :doc:`Doctrine ORM library </doctrine>` to retrieve objects from the
 database and the Templating component to render a template and return a
-``Response`` object. The list ``list.php`` template is now quite a bit simpler:
+``Response`` object. The ``list.html.twig`` template is now quite a bit simpler,
+and uses Twig:
 
-.. code-block:: html+php
+.. code-block:: html+twig
 
-    <!-- app/Resources/views/Blog/list.html.php -->
-    <?php $view->extend('layout.html.php') ?>
+    <!-- templates/blog/list.html.twig -->
+    {% extends 'base.html.twig' %}
 
-    <?php $view['slots']->set('title', 'List of Posts') ?>
+    {% block title %}List of Posts{% endblock %}
 
+    {% block body %}
     <h1>List of Posts</h1>
     <ul>
-        <?php foreach ($posts as $post): ?>
+        {% for post in posts %}
         <li>
-            <a href="<?php echo $view['router']->path(
-                'blog_show',
-                array('id' => $post->getId())
-            ) ?>">
-                <?= $post->getTitle() ?>
+            <a href="{{ path('blog_show', { id: post.id }) }}">
+                {{ post.title }}
             </a>
         </li>
-        <?php endforeach ?>
+        {% endfor %}
     </ul>
+    {% endblock %}
 
 The ``layout.php`` file is nearly identical:
 
-.. code-block:: html+php
+.. code-block:: html+twig
 
-    <!-- app/Resources/views/layout.html.php -->
+    <!-- templates/base.html.twig -->
     <!DOCTYPE html>
     <html>
         <head>
-            <title><?= $view['slots']->output(
-                'title',
-                'Default title'
-            ) ?></title>
+            <meta charset="UTF-8">
+            <title>{% block title %}Welcome!{% endblock %}</title>
+            {% block stylesheets %}{% endblock %}
         </head>
         <body>
-            <?= $view['slots']->output('_content') ?>
+            {% block body %}{% endblock %}
+            {% block javascripts %}{% endblock %}
         </body>
     </html>
 
 .. note::
 
-    The show ``show.php`` template is left as an exercise: updating it should be
-    really similar to updating the ``list.php`` template.
+    The ``show.html.twig`` template is left as an exercise: updating it should be
+    really similar to updating the ``list.html.twig`` template.
 
 When Symfony's engine (called the Kernel) boots up, it needs a map so
 that it knows which controllers to execute based on the request information.
-A routing configuration map - ``app/config/routing.yml`` - provides this information
+A routing configuration map - ``config/routes.yaml`` - provides this information
 in a readable format:
 
 .. code-block:: yaml
 
-    # app/config/routing.yml
+    # config/routes.yaml
     blog_list:
         path:     /blog
-        defaults: { _controller: AppBundle:Blog:list }
+        controller: App\Controller\BlogController::list
 
     blog_show:
         path:     /blog/show/{id}
-        defaults: { _controller: AppBundle:Blog:show }
+        controller: App\Controller\BlogController::show
 
 Now that Symfony is handling all the mundane tasks, the front controller
-``web/app.php`` is dead simple. And since it does so little, you'll never
+``public/index.php`` is reduced to bootstrapping. And since it does so little, you'll never
 have to touch it::
 
-    // web/app.php
+    // public/index.php
     require_once __DIR__.'/../app/bootstrap.php';
-    require_once __DIR__.'/../app/AppKernel.php';
+    require_once __DIR__.'/../src/Kernel.php';
 
     use Symfony\Component\HttpFoundation\Request;
 
-    $kernel = new AppKernel('prod', false);
+    $kernel = new Kernel('prod', false);
     $kernel->handle(Request::createFromGlobals())->send();
 
 The front controller's only job is to initialize Symfony's engine (called the
@@ -671,60 +668,12 @@ It's a beautiful thing.
    :align: center
    :alt: Symfony request flow
 
-Better Templates
-~~~~~~~~~~~~~~~~
-
-If you choose to use it, Symfony comes standard with a templating engine
-called `Twig`_ that makes templates faster to write and easier to read.
-It means that the sample application could contain even less code! Take,
-for example, rewriting ``list.html.php`` template in Twig would look like
-this:
-
-.. code-block:: html+twig
-
-    {# app/Resources/views/blog/list.html.twig #}
-    {% extends "layout.html.twig" %}
-
-    {% block title %}List of Posts{% endblock %}
-
-    {% block body %}
-        <h1>List of Posts</h1>
-        <ul>
-            {% for post in posts %}
-            <li>
-                <a href="{{ path('blog_show', {'id': post.id}) }}">
-                    {{ post.title }}
-                </a>
-            </li>
-            {% endfor %}
-        </ul>
-    {% endblock %}
-
-And rewriting ``layout.html.php`` template in Twig would look like this:
-
-.. code-block:: html+twig
-
-    {# app/Resources/views/layout.html.twig #}
-    <!DOCTYPE html>
-    <html>
-        <head>
-            <title>{% block title %}Default title{% endblock %}</title>
-        </head>
-        <body>
-            {% block body %}{% endblock %}
-        </body>
-    </html>
-
-Twig is well-supported in Symfony. And while PHP templates will always
-be supported in Symfony, the many advantages of Twig will continue to
-be discussed. For more information, see the :doc:`templating chapter </templating>`.
-
 Where Symfony Delivers
 ----------------------
 
-In the upcoming chapters, you'll learn more about how each piece of Symfony
-works and how you can organize your project. For now, celebrate at how migrating
-the blog from flat PHP to Symfony has improved life:
+In the rest of the documentation articles, you'll learn more about how each piece of
+Symfony works and how you can organize your project. For now, celebrate how
+migrating the blog from flat PHP to Symfony has improved your life:
 
 * Your application now has **clear and consistently organized code** (though
   Symfony doesn't force you into this). This promotes **reusability** and
@@ -746,12 +695,12 @@ the blog from flat PHP to Symfony has improved life:
 
 * Symfony's HTTP-centric architecture gives you access to powerful tools
   such as **HTTP caching** powered by **Symfony's internal HTTP cache** or
-  more powerful tools such as `Varnish`_. This is covered in a later chapter
+  more powerful tools such as `Varnish`_. This is covered in another article
   all about :doc:`caching </http_cache>`.
 
 And perhaps best of all, by using Symfony, you now have access to a whole
 set of **high-quality open source tools developed by the Symfony community**!
-A good selection of Symfony community tools can be found on `KnpBundles.com`_.
+A good selection of `Symfony community tools`_ can be found on GitHub.
 
 .. _`Model-View-Controller`: https://en.wikipedia.org/wiki/Model%E2%80%93view%E2%80%93controller
 .. _`Doctrine`: http://www.doctrine-project.org
@@ -760,5 +709,5 @@ A good selection of Symfony community tools can be found on `KnpBundles.com`_.
 .. _`download Composer`: https://getcomposer.org/download/
 .. _`Validator`: https://github.com/symfony/validator
 .. _`Varnish`: https://www.varnish-cache.org/
-.. _`KnpBundles.com`: http://knpbundles.com/
-.. _`Twig`: http://twig.sensiolabs.org
+.. _`Twig`: https://twig.symfony.com
+.. _`Symfony community tools`: https://github.com/search?q=topic%3Asymfony-bundle&type=Repositories

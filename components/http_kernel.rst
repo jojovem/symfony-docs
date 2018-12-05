@@ -14,22 +14,37 @@ The HttpKernel Component
 Installation
 ------------
 
-You can install the component in 2 different ways:
+.. code-block:: terminal
 
-* :doc:`Install it via Composer </components/using_components>` (``symfony/http-kernel`` on Packagist_);
-* Use the official Git repository (https://github.com/symfony/http-kernel).
+    $ composer require symfony/http-kernel
+
+Alternatively, you can clone the `<https://github.com/symfony/http-kernel>`_ repository.
 
 .. include:: /components/require_autoload.rst.inc
 
 The Workflow of a Request
 -------------------------
 
+.. seealso::
+
+    This article explains how to use the HttpKernel features as an independent
+    component in any PHP application. In Symfony applications everything is
+    already configured and ready to use. Read the :doc:`/controller` and
+    :doc:`/event_dispatcher` articles to learn about how to use it to create
+    controllers and define events in Symfony applications.
+
+
 Every HTTP web interaction begins with a request and ends with a response.
 Your job as a developer is to create PHP code that reads the request information
 (e.g. the URL) and creates and returns a response (e.g. an HTML page or JSON string).
+This is a simplified overview of the request workflow in Symfony applications:
 
-.. image:: /_images/components/http_kernel/request-response-flow.png
-   :align: center
+#. The **user** asks for a **resource** in a **browser**;
+#. The **browser** sends a **request** to the **server**;
+#. **Symfony** gives the **application** a **Request** object;
+#. The **application** generates a **Response** object using the data of the **Request** object;
+#. The **server** sends back the **response** to the **browser**;
+#. The **browser** displays the **resource** to the **user**.
 
 Typically, some sort of framework or system is built to handle all the repetitive
 tasks (e.g. routing, security, etc) so that a developer can easily build
@@ -62,8 +77,9 @@ the concrete implementation of :method:`HttpKernelInterface::handle() <Symfony\\
 defines a workflow that starts with a :class:`Symfony\\Component\\HttpFoundation\\Request`
 and ends with a :class:`Symfony\\Component\\HttpFoundation\\Response`.
 
-.. image:: /_images/components/http_kernel/01-workflow.png
-   :align: center
+.. raw:: html
+
+    <object data="../_images/components/http_kernel/http-workflow.svg" type="image/svg+xml"></object>
 
 The exact details of this workflow are the key to understanding how the kernel
 (and the Symfony Framework or any other library that uses the kernel) works.
@@ -80,8 +96,8 @@ To help explain this process, this document looks at each step of the process
 and talks about how one specific implementation of the HttpKernel - the Symfony
 Framework - works.
 
-Initially, using the :class:`Symfony\\Component\\HttpKernel\\HttpKernel`
-is really simple and involves creating an
+Initially, using the :class:`Symfony\\Component\\HttpKernel\\HttpKernel` does
+not take many steps. You create an
 :doc:`event dispatcher </components/event_dispatcher>` and a
 :ref:`controller and argument resolver <component-http-kernel-resolve-controller>`
 (explained below). To complete your working kernel, you'll add more event
@@ -114,7 +130,7 @@ listeners to the events discussed below::
     // send the headers and echo the content
     $response->send();
 
-    // triggers the kernel.terminate event
+    // trigger the kernel.terminate event
     $kernel->terminate($request, $response);
 
 See ":ref:`http-kernel-working-example`" for a more concrete implementation.
@@ -124,9 +140,9 @@ For general information on adding listeners to the events below, see
 
 .. caution::
 
-    As of 3.1 the :class:`Symfony\\Component\\Httpkernel\\HttpKernel` accepts a
+    As of 3.1 the :class:`Symfony\\Component\\HttpKernel\\HttpKernel` accepts a
     fourth argument, which must be an instance of
-    :class:`Symfony\\Component\\Httpkernel\\Controller\\ArgumentResolverInterface`.
+    :class:`Symfony\\Component\\HttpKernel\\Controller\\ArgumentResolverInterface`.
     In 4.0 this argument will become mandatory.
 
 .. seealso::
@@ -149,9 +165,6 @@ layer that denies access).
 The first event that is dispatched inside :method:`HttpKernel::handle <Symfony\\Component\\HttpKernel\\HttpKernel::handle>`
 is ``kernel.request``, which may have a variety of different listeners.
 
-.. image:: /_images/components/http_kernel/02-kernel-request.png
-   :align: center
-
 Listeners of this event can be quite varied. Some listeners - such as a security
 listener - might have enough information to create a ``Response`` object immediately.
 For example, if a security listener determined that a user doesn't have access,
@@ -160,9 +173,6 @@ to the login page or a 403 Access Denied response.
 
 If a ``Response`` is returned at this stage, the process skips directly to
 the :ref:`kernel.response <component-http-kernel-kernel-response>` event.
-
-.. image:: /_images/components/http_kernel/03-kernel-request-response.png
-   :align: center
 
 Other listeners simply initialize things or add more information to the request.
 For example, a listener might determine and set the locale on the ``Request``
@@ -216,12 +226,9 @@ to your application. This is the job of the "controller resolver" - a class
 that implements :class:`Symfony\\Component\\HttpKernel\\Controller\\ControllerResolverInterface`
 and is one of the constructor arguments to ``HttpKernel``.
 
-.. image:: /_images/components/http_kernel/04-resolve-controller.png
-   :align: center
-
 Your job is to create a class that implements the interface and fill in its
-two methods: ``getController`` and ``getArguments``. In fact, one default
-implementation already exists, which you can use directly or learn from:
+method: ``getController()``. In fact, one default implementation already
+exists, which you can use directly or learn from:
 :class:`Symfony\\Component\\HttpKernel\\Controller\\ControllerResolver`.
 This implementation is explained more in the sidebar below::
 
@@ -232,29 +239,13 @@ This implementation is explained more in the sidebar below::
     interface ControllerResolverInterface
     {
         public function getController(Request $request);
-
-        public function getArguments(Request $request, $controller);
     }
 
-.. caution::
-
-    The ``getArguments()`` method in the
-    :class:`Symfony\\Component\\Httpkernel\\Controller\\ControllerResolver` and
-    respective interface
-    :class:`Symfony\\Component\\Httpkernel\\Controller\\ControllerResolverInterface`
-    are deprecated as of 3.1 and will be removed in 4.0. You can use the
-    :class:`Symfony\\Component\\Httpkernel\\Controller\\ArgumentResolver` which
-    uses the :class:`Symfony\\Component\\Httpkernel\\Controller\\ArgumentResolverInterface`
-    instead.
-
-Internally, the ``HttpKernel::handle`` method first calls
+Internally, the ``HttpKernel::handle()`` method first calls
 :method:`Symfony\\Component\\HttpKernel\\Controller\\ControllerResolverInterface::getController`
 on the controller resolver. This method is passed the ``Request`` and is responsible
 for somehow determining and returning a PHP callable (the controller) based
 on the request's information.
-
-The second method, :method:`Symfony\\Component\\HttpKernel\\Controller\\ArgumentResolverInterface::getArguments`,
-will be called after another event - ``kernel.controller`` - is dispatched.
 
 .. sidebar:: Resolving the Controller in the Symfony Framework
 
@@ -271,18 +262,18 @@ will be called after another event - ``kernel.controller`` - is dispatched.
     information is typically placed on the ``Request`` via the ``RouterListener``).
     This string is then transformed into a PHP callable by doing the following:
 
-    a) The ``AcmeDemoBundle:Default:index`` format of the ``_controller`` key
-       is changed to another string that contains the full class and method
-       name of the controller by following the convention used in Symfony - e.g.
-       ``Acme\DemoBundle\Controller\DefaultController::indexAction``. This transformation
-       is specific to the :class:`Symfony\\Bundle\\FrameworkBundle\\Controller\\ControllerResolver`
+    a) If the ``_controller`` key doesn't follow the recommended PHP namespace
+       format (e.g. ``App\Controller\DefaultController::index``) its format is
+       transformed into it. For example, the legacy ``FooBundle:Default:index``
+       format would be changed to ``Acme\FooBundle\Controller\DefaultController::indexAction``.
+       This transformation is specific to the :class:`Symfony\\Bundle\\FrameworkBundle\\Controller\\ControllerResolver`
        sub-class used by the Symfony Framework.
 
     b) A new instance of your controller class is instantiated with no
        constructor arguments.
 
     c) If the controller implements :class:`Symfony\\Component\\DependencyInjection\\ContainerAwareInterface`,
-       ``setContainer`` is called on the controller object and the container
+       ``setContainer()`` is called on the controller object and the container
        is passed to it. This step is also specific to the  :class:`Symfony\\Bundle\\FrameworkBundle\\Controller\\ControllerResolver`
        sub-class used by the Symfony Framework.
 
@@ -296,14 +287,11 @@ the controller is executed.
 
 :ref:`Kernel Events Information Table <component-http-kernel-event-table>`
 
-After the controller callable has been determined, ``HttpKernel::handle``
+After the controller callable has been determined, ``HttpKernel::handle()``
 dispatches the ``kernel.controller`` event. Listeners to this event might initialize
 some part of the system that needs to be initialized after certain things
 have been determined (e.g. the controller, routing information) but before
 the controller is executed. For some examples, see the Symfony section below.
-
-.. image:: /_images/components/http_kernel/06-kernel-controller.png
-   :align: center
 
 Listeners to this event can also change the controller callable completely
 by calling :method:`FilterControllerEvent::setController <Symfony\\Component\\HttpKernel\\Event\\FilterControllerEvent::setController>`
@@ -315,11 +303,10 @@ on the event object that's passed to listeners on this event.
     the Symfony Framework, and many deal with collecting profiler data when
     the profiler is enabled.
 
-    One interesting listener comes from the `SensioFrameworkExtraBundle`_,
-    which is packaged with the Symfony Standard Edition. This listener's
-    `@ParamConverter`_ functionality allows you to pass a full object (e.g. a
-    ``Post`` object) to your controller instead of a scalar value (e.g. an
-    ``id`` parameter that was on your route). The listener -
+    One interesting listener comes from the `SensioFrameworkExtraBundle`_. This
+    listener's `@ParamConverter`_ functionality allows you to pass a full object
+    (e.g. a ``Post`` object) to your controller instead of a scalar value (e.g.
+    an ``id`` parameter that was on your route). The listener -
     ``ParamConverterListener`` - uses reflection to look at each of the
     arguments of the controller and tries to use different methods to convert
     those to objects, which are then stored in the ``attributes`` property of
@@ -328,16 +315,13 @@ on the event object that's passed to listeners on this event.
 4) Getting the Controller Arguments
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Next, ``HttpKernel::handle`` calls
+Next, ``HttpKernel::handle()`` calls
 :method:`ArgumentResolverInterface::getArguments() <Symfony\\Component\\HttpKernel\\Controller\\ArgumentResolverInterface::getArguments>`.
 Remember that the controller returned in ``getController()`` is a callable.
 The purpose of ``getArguments()`` is to return the array of arguments that
 should be passed to that controller. Exactly how this is done is completely
 up to your design, though the built-in :class:`Symfony\\Component\\HttpKernel\\Controller\\ArgumentResolver`
 is a good example.
-
-.. image:: /_images/components/http_kernel/07-controller-arguments.png
-   :align: center
 
 At this point the kernel has a PHP callable (the controller) and an array
 of arguments that should be passed when executing that callable.
@@ -358,8 +342,7 @@ of arguments that should be passed when executing that callable.
 
     b) If the argument in the controller is type-hinted with Symfony's
        :class:`Symfony\\Component\\HttpFoundation\\Request` object, the
-       ``Request`` is passed in as the value. If you have a custom ``Request``
-       class, it will be injected as long as you extend the Symfony ``Request``.
+       ``Request`` is passed in as the value.
 
     c) If the function or method argument is `variadic`_ and the ``Request``
        ``attributes`` bag contains an array for that argument, they will all be
@@ -377,10 +360,7 @@ of arguments that should be passed when executing that callable.
 5) Calling the Controller
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The next step is simple! ``HttpKernel::handle`` executes the controller.
-
-.. image:: /_images/components/http_kernel/08-call-controller.png
-   :align: center
+The next step ``HttpKernel::handle()`` does is executing the controller.
 
 The job of the controller is to build the response for the given resource.
 This could be an HTML page, a JSON string or anything else. Unlike every
@@ -390,9 +370,6 @@ for each page that is built.
 Usually, the controller will return a ``Response`` object. If this is true,
 then the work of the kernel is just about done! In this case, the next step
 is the :ref:`kernel.response <component-http-kernel-kernel-response>` event.
-
-.. image:: /_images/components/http_kernel/09-controller-returns-response.png
-   :align: center
 
 But if the controller returns anything besides a ``Response``, then the kernel
 has a little bit more work to do - :ref:`kernel.view <component-http-kernel-kernel-view>`
@@ -418,9 +395,6 @@ another event - ``kernel.view``. The job of a listener to this event is to
 use the return value of the controller (e.g. an array of data or an object)
 to create a ``Response``.
 
-.. image:: /_images/components/http_kernel/10-kernel-view.png
-   :align: center
-
 This can be useful if you want to use a "view" layer: instead of returning
 a ``Response`` from the controller, you return data that represents the page.
 A listener to this event could then use this data to create a ``Response`` that
@@ -438,12 +412,11 @@ return a ``Response``.
 .. sidebar:: ``kernel.view`` in the Symfony Framework
 
     There is no default listener inside the Symfony Framework for the ``kernel.view``
-    event. However, one core bundle - `SensioFrameworkExtraBundle`_ - *does*
-    add a listener to this event. If your controller returns an array,
-    and you place the `@Template`_ annotation above the controller, then this
-    listener renders a template, passes the array you returned from your
-    controller to that template, and creates a ``Response`` containing the
-    returned content from that template.
+    event. However, `SensioFrameworkExtraBundle`_ *does* add a listener to this
+    event. If your controller returns an array, and you place the `@Template`_
+    annotation above the controller, then this listener renders a template,
+    passes the array you returned from your controller to that template, and
+    creates a ``Response`` containing the returned content from that template.
 
     Additionally, a popular community bundle `FOSRestBundle`_ implements
     a listener on this event which aims to give you a robust view layer
@@ -498,11 +471,11 @@ been streamed to the user
 :ref:`Kernel Events Information Table <component-http-kernel-event-table>`
 
 The final event of the HttpKernel process is ``kernel.terminate`` and is unique
-because it occurs *after* the ``HttpKernel::handle`` method, and after the
+because it occurs *after* the ``HttpKernel::handle()`` method, and after the
 response is sent to the user. Recall from above, then the code that uses
 the kernel, ends like this::
 
-    // send the headers and echo the content
+    // sends the headers and echoes the content
     $response->send();
 
     // triggers the kernel.terminate event
@@ -529,9 +502,9 @@ as possible to the client (e.g. sending emails).
 
 .. sidebar:: ``kernel.terminate`` in the Symfony Framework
 
-    If you use the SwiftmailerBundle with Symfony and use ``memory`` spooling,
-    then the `EmailSenderListener`_ is activated, which actually delivers
-    any emails that you scheduled to send during the request.
+    If you use the :ref:`memory spooling <email-spool-memory>` option of the
+    default Symfony mailer, then the `EmailSenderListener`_ is activated, which
+    actually delivers any emails that you scheduled to send during the request.
 
 .. _component-http-kernel-kernel-exception:
 
@@ -543,14 +516,15 @@ Handling Exceptions: the ``kernel.exception`` Event
 
 :ref:`Kernel Events Information Table <component-http-kernel-event-table>`
 
-If an exception is thrown at any point inside ``HttpKernel::handle``, another
-event - ``kernel.exception`` is thrown. Internally, the body of the ``handle``
+If an exception is thrown at any point inside ``HttpKernel::handle()``, another
+event - ``kernel.exception`` is thrown. Internally, the body of the ``handle()``
 function is wrapped in a try-catch block. When any exception is thrown, the
 ``kernel.exception`` event is dispatched so that your system can somehow respond
 to the exception.
 
-.. image:: /_images/components/http_kernel/11-kernel-exception.png
-   :align: center
+.. raw:: html
+
+    <object data="../_images/components/http_kernel/http-workflow-exception.svg" type="image/svg+xml"></object>
 
 Each listener to this event is passed a :class:`Symfony\\Component\\HttpKernel\\Event\\GetResponseForExceptionEvent`
 object, which you can use to access the original exception via the
@@ -588,14 +562,19 @@ below for more details).
 
     2) If the original exception implements
        :class:`Symfony\\Component\\HttpKernel\\Exception\\HttpExceptionInterface`,
-       then ``getStatusCode`` and ``getHeaders`` are called on the exception
+       then ``getStatusCode()`` and ``getHeaders()`` are called on the exception
        and used to populate the headers and status code of the ``FlattenException``
        object. The idea is that these are used in the next step when creating
        the final response. If you want to set custom HTTP headers, you can always
-       use the ``setHeaders`` method on exceptions derived from the
+       use the ``setHeaders()`` method on exceptions derived from the
        :class:`Symfony\\Component\\HttpKernel\\Exception\\HttpException` class.
 
-    3) A controller is executed and passed the flattened exception. The exact
+    3) If the original exception implements
+       :class:`Symfony\\Component\\HttpFoundation\\Exception\\RequestExceptionInterface`,
+       then the status code of the ``FlattenException`` object is populated with
+       ``400`` and no other headers are modified.
+
+    4) A controller is executed and passed the flattened exception. The exact
        controller to render is passed as a constructor argument to this listener.
        This controller will return the final ``Response`` for this error page.
 
@@ -613,7 +592,7 @@ Creating an Event Listener
 --------------------------
 
 As you've seen, you can create and attach event listeners to any of the events
-dispatched during the ``HttpKernel::handle`` cycle. Typically a listener is a PHP
+dispatched during the ``HttpKernel::handle()`` cycle. Typically a listener is a PHP
 class with a method that's executed, but it can be anything. For more information
 on creating and attaching event listeners, see :doc:`/components/event_dispatcher`.
 
@@ -694,17 +673,18 @@ else that can be used to create a working example::
 Sub Requests
 ------------
 
-In addition to the "main" request that's sent into ``HttpKernel::handle``,
+In addition to the "main" request that's sent into ``HttpKernel::handle()``,
 you can also send so-called "sub request". A sub request looks and acts like
 any other request, but typically serves to render just one small portion of
 a page instead of a full page. You'll most commonly make sub-requests from
 your controller (or perhaps from inside a template, that's being rendered by
 your controller).
 
-.. image:: /_images/components/http_kernel/sub-request.png
-   :align: center
+.. raw:: html
 
-To execute a sub request, use ``HttpKernel::handle``, but change the second
+    <object data="../_images/components/http_kernel/http-workflow-subrequest.svg" type="image/svg+xml"></object>
+
+To execute a sub request, use ``HttpKernel::handle()``, but change the second
 argument as follows::
 
     use Symfony\Component\HttpFoundation\Request;
@@ -742,6 +722,32 @@ look like this::
         // ...
     }
 
+.. _http-kernel-resource-locator:
+
+Locating Resources
+------------------
+
+The HttpKernel component is responsible of the bundle mechanism used in Symfony
+applications. The key feature of the bundles is that they allow to override any
+resource used by the application (config files, templates, controllers,
+translation files, etc.)
+
+This overriding mechanism works because resources are referenced not by their
+physical path but by their logical path. For example, the ``services.xml`` file
+stored in the ``Resources/config/`` directory of a bundle called FooBundle is
+referenced as ``@FooBundle/Resources/config/services.xml``. This logical path
+will work when the application overrides that file and even if you change the
+directory of FooBundle.
+
+The HttpKernel component provides a method called :method:`Symfony\\Component\\HttpKernel\\Kernel::locateResource`
+which can be used to transform logical paths into physical paths::
+
+    use Symfony\Component\HttpKernel\HttpKernel;
+
+    // ...
+    $kernel = new HttpKernel($dispatcher, $resolver);
+    $path = $kernel->locateResource('@FooBundle/Resources/config/services.xml');
+
 Learn more
 ----------
 
@@ -752,10 +758,10 @@ Learn more
    /reference/events
 
 .. _Packagist: https://packagist.org/packages/symfony/http-kernel
-.. _reflection: http://php.net/manual/en/book.reflection.php
+.. _reflection: https://php.net/manual/en/book.reflection.php
 .. _FOSRestBundle: https://github.com/friendsofsymfony/FOSRestBundle
 .. _`Create your own framework... on top of the Symfony2 Components`: http://fabien.potencier.org/article/50/create-your-own-framework-on-top-of-the-symfony2-components-part-1
-.. _`PHP FPM`: http://php.net/manual/en/install.fpm.php
+.. _`PHP FPM`: https://php.net/manual/en/install.fpm.php
 .. _`SensioFrameworkExtraBundle`: https://symfony.com/doc/current/bundles/SensioFrameworkExtraBundle/index.html
 .. _`@ParamConverter`: https://symfony.com/doc/current/bundles/SensioFrameworkExtraBundle/annotations/converters.html
 .. _`@Template`: https://symfony.com/doc/current/bundles/SensioFrameworkExtraBundle/annotations/view.html

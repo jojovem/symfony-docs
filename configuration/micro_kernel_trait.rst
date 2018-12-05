@@ -1,40 +1,38 @@
 Building your own Framework with the MicroKernelTrait
 =====================================================
 
-A :ref:`traditional Symfony app <installation-creating-the-app>` contains a sensible
-directory structure, various configuration files and an ``AppKernel`` with several
-bundles already-registered. This is a fully-featured app that's ready to go.
+The default ``Kernel`` class included in Symfony applications uses a
+:class:`Symfony\\Bundle\\FrameworkBundle\\Kernel\\MicroKernelTrait` to configure
+the bundles, the routes and the service container in the same class.
 
-But did you know, you can create a fully-functional Symfony application in as little
-as one file? This is possible thanks to the new
-:class:`Symfony\\Bundle\\FrameworkBundle\\Kernel\\MicroKernelTrait`. This allows
-you to start with a tiny application, and then add features and structure as you
-need to.
+This micro-kernel approach is flexible, allowing you to control your application
+structure and features.
 
 A Single-File Symfony Application
 ---------------------------------
 
-Start with a completely empty directory. Get ``symfony/symfony`` as a dependency
+Start with a completely empty directory and install these Symfony components
 via Composer:
 
 .. code-block:: bash
 
-    $ composer require symfony/symfony
+    $ composer require symfony/config symfony/http-kernel \
+      symfony/http-foundation symfony/routing \
+      symfony/dependency-injection symfony/framework-bundle
 
-Next, create an ``index.php`` file that creates a kernel class and executes it::
+Next, create an ``index.php`` file that defines the kernel class and executes it::
 
     use Symfony\Bundle\FrameworkBundle\Kernel\MicroKernelTrait;
     use Symfony\Component\Config\Loader\LoaderInterface;
     use Symfony\Component\DependencyInjection\ContainerBuilder;
     use Symfony\Component\HttpFoundation\JsonResponse;
     use Symfony\Component\HttpFoundation\Request;
-    use Symfony\Component\HttpKernel\Kernel;
+    use Symfony\Component\HttpKernel\Kernel as BaseKernel;
     use Symfony\Component\Routing\RouteCollectionBuilder;
 
-    // require Composer's autoloader
     require __DIR__.'/vendor/autoload.php';
 
-    class AppKernel extends Kernel
+    class Kernel extends BaseKernel
     {
         use MicroKernelTrait;
 
@@ -47,7 +45,7 @@ Next, create an ``index.php`` file that creates a kernel class and executes it::
 
         protected function configureContainer(ContainerBuilder $c, LoaderInterface $loader)
         {
-            // PHP equivalent of config.yml
+            // PHP equivalent of config/packages/framework.yaml
             $c->loadFromExtension('framework', array(
                 'secret' => 'S0ME_SECRET'
             ));
@@ -57,18 +55,18 @@ Next, create an ``index.php`` file that creates a kernel class and executes it::
         {
             // kernel is a service that points to this class
             // optional 3rd argument is the route name
-            $routes->add('/random/{limit}', 'kernel:randomAction');
+            $routes->add('/random/{limit}', 'Kernel::randomNumber');
         }
 
-        public function randomAction($limit)
+        public function randomNumber($limit)
         {
             return new JsonResponse(array(
-                'number' => rand(0, $limit)
+                'number' => random_int(0, $limit),
             ));
         }
     }
 
-    $kernel = new AppKernel('dev', true);
+    $kernel = new Kernel('dev', true);
     $request = Request::createFromGlobals();
     $response = $kernel->handle($request);
     $response->send();
@@ -76,13 +74,13 @@ Next, create an ``index.php`` file that creates a kernel class and executes it::
 
 That's it! To test it, you can start the built-in web server:
 
-.. code-block:: bash
+.. code-block:: terminal
 
     $ php -S localhost:8000
 
 Then see the JSON response in your browser:
 
-> http://localhost:8000/random/10
+    http://localhost:8000/random/10
 
 The Methods of a "Micro" Kernel
 -------------------------------
@@ -94,16 +92,15 @@ that define your bundles, your services and your routes:
     This is the same ``registerBundles()`` that you see in a normal kernel.
 
 **configureContainer(ContainerBuilder $c, LoaderInterface $loader)**
-    This methods builds and configures the container. In practice, you will use
+    This method builds and configures the container. In practice, you will use
     ``loadFromExtension`` to configure different bundles (this is the equivalent
-    of what you see in a normal ``config.yml`` file). You can also register services
-    directly in PHP or load external configuration files (shown below).
+    of what you see in a normal ``config/packages/*`` file). You can also register
+    services directly in PHP or load external configuration files (shown below).
 
 **configureRoutes(RouteCollectionBuilder $routes)**
     Your job in this method is to add routes to the application. The
     ``RouteCollectionBuilder`` has methods that make adding routes in PHP more
     fun. You can also load external routing files (shown below).
-
 
 Advanced Example: Twig, Annotations and the Web Debug Toolbar
 -------------------------------------------------------------
@@ -122,46 +119,35 @@ your ``composer.json`` file to load from there:
         },
         "autoload": {
             "psr-4": {
-                "": "src/"
+                "App\\": "src/"
             }
         }
     }
 
-Now, suppose you want to use Twig and load routes via annotations. For annotation
-routing, you need SensioFrameworkExtraBundle. This comes with a normal Symfony project.
-But in this case, you need to download it:
+Then, run ``composer dump-autoload`` to dump your new autoload config.
+    
+Now, suppose you want to use Twig and load routes via annotations. Instead of
+putting *everything* in ``index.php``, create a new ``src/Kernel.php`` to
+hold the kernel. Now it looks like this::
 
-.. code-block:: bash
-
-    $ composer require sensio/framework-extra-bundle
-
-Instead of putting *everything* in ``index.php``, create a new ``app/AppKernel.php``
-to hold the kernel. Now it looks like this::
-
-    // app/AppKernel.php
+    // src/Kernel.php
+    namespace App;
 
     use Symfony\Bundle\FrameworkBundle\Kernel\MicroKernelTrait;
     use Symfony\Component\Config\Loader\LoaderInterface;
     use Symfony\Component\DependencyInjection\ContainerBuilder;
-    use Symfony\Component\HttpKernel\Kernel;
+    use Symfony\Component\HttpKernel\Kernel as BaseKernel;
     use Symfony\Component\Routing\RouteCollectionBuilder;
-    use Doctrine\Common\Annotations\AnnotationRegistry;
 
-    // require Composer's autoloader
-    $loader = require __DIR__.'/../vendor/autoload.php';
-    // auto-load annotations
-    AnnotationRegistry::registerLoader(array($loader, 'loadClass'));
-
-    class AppKernel extends Kernel
+    class Kernel extends BaseKernel
     {
         use MicroKernelTrait;
 
         public function registerBundles()
         {
             $bundles = array(
-                new Symfony\Bundle\FrameworkBundle\FrameworkBundle(),
-                new Symfony\Bundle\TwigBundle\TwigBundle(),
-                new Sensio\Bundle\FrameworkExtraBundle\SensioFrameworkExtraBundle()
+                new \Symfony\Bundle\FrameworkBundle\FrameworkBundle(),
+                new \Symfony\Bundle\TwigBundle\TwigBundle(),
             );
 
             if ($this->getEnvironment() == 'dev') {
@@ -173,7 +159,7 @@ to hold the kernel. Now it looks like this::
 
         protected function configureContainer(ContainerBuilder $c, LoaderInterface $loader)
         {
-            $loader->load(__DIR__.'/config/config.yml');
+            $loader->load(__DIR__.'/../config/framework.yaml');
 
             // configure WebProfilerBundle only if the bundle is enabled
             if (isset($this->bundles['WebProfilerBundle'])) {
@@ -193,27 +179,43 @@ to hold the kernel. Now it looks like this::
             }
 
             // load the annotation routes
-            $routes->import(__DIR__.'/../src/App/Controller/', '/', 'annotation');
+            $routes->import(__DIR__.'/../src/Controller/', '/', 'annotation');
+        }
+
+        // optional, to use the standard Symfony cache directory
+        public function getCacheDir()
+        {
+            return __DIR__.'/../var/cache/'.$this->getEnvironment();
+        }
+
+        // optional, to use the standard Symfony logs directory
+        public function getLogDir()
+        {
+            return __DIR__.'/../var/log';
         }
     }
 
-Unlike the previous kernel, this loads an external ``app/config/config.yml`` file,
+Before continuing, run this command to add support for the new dependencies:
+
+.. code-block:: terminal
+
+    $ composer require symfony/yaml symfony/twig-bundle symfony/web-profiler-bundle doctrine/annotations
+
+Unlike the previous kernel, this loads an external ``config/framework.yaml`` file,
 because the configuration started to get bigger:
 
 .. configuration-block::
 
     .. code-block:: yaml
 
-        # app/config/config.yml
+        # config/framework.yaml
         framework:
             secret: S0ME_SECRET
-            templating:
-                engines: ['twig']
             profiler: { only_exceptions: false }
 
     .. code-block:: xml
 
-        <!-- app/config/config.xml -->
+        <!-- config/framework.xml -->
         <?xml version="1.0" encoding="UTF-8" ?>
         <container xmlns="http://symfony.com/schema/dic/services"
             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -222,64 +224,74 @@ because the configuration started to get bigger:
                 http://symfony.com/schema/dic/symfony http://symfony.com/schema/dic/symfony/symfony-1.0.xsd">
 
             <framework:config secret="S0ME_SECRET">
-                <framework:templating>
-                    <framework:engine>twig</framework:engine>
-                </framework:templating>
                 <framework:profiler only-exceptions="false" />
             </framework:config>
         </container>
 
     .. code-block:: php
 
-        // app/config/config.php
+        // config/framework.php
         $container->loadFromExtension('framework', array(
             'secret' => 'S0ME_SECRET',
-            'templating' => array(
-                'engines' => array('twig'),
-            ),
             'profiler' => array(
                 'only_exceptions' => false,
             ),
         ));
 
-This also loads annotation routes from an ``src/App/Controller/`` directory, which
+This also loads annotation routes from an ``src/Controller/`` directory, which
 has one file in it::
 
-    // src/App/Controller/MicroController.php
+    // src/Controller/MicroController.php
     namespace App\Controller;
 
-    use Symfony\Bundle\FrameworkBundle\Controller\Controller;
-    use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
+    use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+    use Symfony\Component\Routing\Annotation\Route;
 
-    class MicroController extends Controller
+    class MicroController extends AbstractController
     {
         /**
          * @Route("/random/{limit}")
          */
-        public function randomAction($limit)
+        public function randomNumber($limit)
         {
-            $number = rand(0, $limit);
+            $number = random_int(0, $limit);
 
             return $this->render('micro/random.html.twig', array(
-                'number' => $number
+                'number' => $number,
             ));
         }
     }
 
-Template files should live in the ``Resources/views`` directory of whatever directory
-your *kernel* lives in. Since ``AppKernel`` lives in ``app/``, this template lives
-at ``app/Resources/views/micro/random.html.twig``.
+Template files should live in the ``templates/`` directory at the root of your project.
+This template lives at ``templates/micro/random.html.twig``:
+
+.. code-block:: html+twig
+
+    <!-- templates/micro/random.html.twig -->
+    <!DOCTYPE html>
+    <html>
+        <head>
+            <title>Random action</title>
+        </head>
+        <body>
+            <p>{{ number }}</p>
+        </body>
+    </html>
 
 Finally, you need a front controller to boot and run the application. Create a
-``web/index.php``::
+``public/index.php``::
 
-    // web/index.php
+    // public/index.php
 
+    use App\Kernel;
+    use Doctrine\Common\Annotations\AnnotationRegistry;
     use Symfony\Component\HttpFoundation\Request;
 
-    require __DIR__.'/../app/AppKernel.php';
+    $loader = require __DIR__.'/../vendor/autoload.php';
+    // auto-load annotations
+    AnnotationRegistry::registerLoader(array($loader, 'loadClass'));
 
-    $kernel = new AppKernel('dev', true);
+    $kernel = new Kernel('dev', true);
     $request = Request::createFromGlobals();
     $response = $kernel->handle($request);
     $response->send();
@@ -292,27 +304,32 @@ this:
 .. code-block:: text
 
     your-project/
-    ├─ app/
-    |  ├─ AppKernel.php
-    │  ├─ cache/
-    │  ├─ config/
-    │  ├─ logs/
-    │  └─ Resources
-    |     └─ views
-    |        ├─ base.html.twig
-    |        └─ micro
-    |           └─ random.html.twig
+    ├─ config/
+    │  └─ framework.yaml
+    ├─ public/
+    |  └─ index.php
     ├─ src/
-    │  └─ App
-    |     └─ Controller
-    |        └─ MicroController.php
+    |  ├─ Controller
+    |  |  └─ MicroController.php
+    |  └─ Kernel.php
+    ├─ templates/
+    |  └─ micro/
+    |     └─ random.html.twig
+    ├─ var/
+    |  ├─ cache/
+    │  └─ log/
     ├─ vendor/
     │  └─ ...
-    ├─ web/
-    |  └─ index.php
     ├─ composer.json
     └─ composer.lock
 
-Hey, that looks a lot like a *traditional* Symfony application! You're right: the
-``MicroKernelTrait`` *is* still Symfony: but you can control your structure and
-features quite easily.
+As before you can use PHP built-in server:
+
+.. code-block:: terminal
+
+    cd public/
+    $ php -S localhost:8000 -t public/
+
+Then see webpage in browser:
+
+    http://localhost:8000/random/10

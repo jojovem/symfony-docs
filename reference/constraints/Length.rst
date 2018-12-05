@@ -1,8 +1,13 @@
 Length
 ======
 
-Validates that a given string length is *between* some minimum and maximum
-value.
+Validates that a given string length is *between* some minimum and maximum value.
+
+.. caution::
+
+    ``null`` and empty strings are not handled by this constraint. You need to
+    also add the :doc:`/reference/constraints/NotBlank` or :doc:`/reference/constraints/NotNull`
+    constraints to validate against these.
 
 +----------------+----------------------------------------------------------------------+
 | Applies to     | :ref:`property or method <validation-property-target>`               |
@@ -13,6 +18,7 @@ value.
 |                | - `minMessage`_                                                      |
 |                | - `maxMessage`_                                                      |
 |                | - `exactMessage`_                                                    |
+|                | - `charsetMessage`_                                                  |
 |                | - `payload`_                                                         |
 +----------------+----------------------------------------------------------------------+
 | Class          | :class:`Symfony\\Component\\Validator\\Constraints\\Length`          |
@@ -30,8 +36,8 @@ and "50", you might add the following:
 
     .. code-block:: php-annotations
 
-        // src/AppBundle/Entity/Participant.php
-        namespace AppBundle\Entity;
+        // src/Entity/Participant.php
+        namespace App\Entity;
 
         use Symfony\Component\Validator\Constraints as Assert;
 
@@ -50,8 +56,8 @@ and "50", you might add the following:
 
     .. code-block:: yaml
 
-        # src/AppBundle/Resources/config/validation.yml
-        AppBundle\Entity\Participant:
+        # config/validator/validation.yaml
+        App\Entity\Participant:
             properties:
                 firstName:
                     - Length:
@@ -62,13 +68,13 @@ and "50", you might add the following:
 
     .. code-block:: xml
 
-        <!-- src/AppBundle/Resources/config/validation.xml -->
+        <!-- config/validator/validation.xml -->
         <?xml version="1.0" encoding="UTF-8" ?>
         <constraint-mapping xmlns="http://symfony.com/schema/dic/constraint-mapping"
             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
             xsi:schemaLocation="http://symfony.com/schema/dic/constraint-mapping http://symfony.com/schema/dic/constraint-mapping/constraint-mapping-1.0.xsd">
 
-            <class name="AppBundle\Entity\Participant">
+            <class name="App\Entity\Participant">
                 <property name="firstName">
                     <constraint name="Length">
                         <option name="min">2</option>
@@ -86,8 +92,8 @@ and "50", you might add the following:
 
     .. code-block:: php
 
-        // src/AppBundle/Entity/Participant.php
-        namespace AppBundle\Entity;
+        // src/Entity/Participant.php
+        namespace App\Entity;
 
         use Symfony\Component\Validator\Mapping\ClassMetadata;
         use Symfony\Component\Validator\Constraints as Assert;
@@ -104,6 +110,8 @@ and "50", you might add the following:
                 )));
             }
         }
+
+.. include:: /reference/constraints/_empty-values-are-valid.rst.inc
 
 Options
 -------
@@ -146,6 +154,16 @@ minMessage
 The message that will be shown if the underlying value's length is less
 than the `min`_ option.
 
+You can use the following parameters in this message:
+
++-----------------+-----------------------------+
+| Parameter       | Description                 |
++=================+=============================+
+| ``{{ value }}`` | The current (invalid) value |
++-----------------+-----------------------------+
+| ``{{ limit }}`` | The expected minimum length |
++-----------------+-----------------------------+
+
 maxMessage
 ~~~~~~~~~~
 
@@ -154,6 +172,16 @@ maxMessage
 The message that will be shown if the underlying value's length is more
 than the `max`_ option.
 
+You can use the following parameters in this message:
+
++-----------------+-----------------------------+
+| Parameter       | Description                 |
++=================+=============================+
+| ``{{ value }}`` | The current (invalid) value |
++-----------------+-----------------------------+
+| ``{{ limit }}`` | The expected maximum length |
++-----------------+-----------------------------+
+
 exactMessage
 ~~~~~~~~~~~~
 
@@ -161,5 +189,32 @@ exactMessage
 
 The message that will be shown if min and max values are equal and the underlying
 value's length is not exactly this value.
+
+You can use the following parameters in this message:
+
++-----------------+-----------------------------+
+| Parameter       | Description                 |
++=================+=============================+
+| ``{{ value }}`` | The current (invalid) value |
++-----------------+-----------------------------+
+| ``{{ limit }}`` | The exact expected length   |
++-----------------+-----------------------------+
+
+charsetMessage
+~~~~~~~~~~~~~~
+
+**type**: ``string`` **default**: ``This value does not match the expected {{ charset }} charset.``
+
+The message that will be shown if the value is not using the given `charset`_.
+
+You can use the following parameters in this message:
+
++-------------------+-----------------------------+
+| Parameter         | Description                 |
++===================+=============================+
+| ``{{ value }}``   | The current (invalid) value |
++-------------------+-----------------------------+
+| ``{{ charset }}`` | The expected charset        |
++-------------------+-----------------------------+
 
 .. include:: /reference/constraints/_payload-option.rst.inc

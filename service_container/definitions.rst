@@ -21,22 +21,22 @@ Getting and Setting Service Definitions
 
 There are some helpful methods for working with the service definitions::
 
-    // find out if there is an "app.mailer" definition
+    // finds out if there is an "app.mailer" definition
     $container->hasDefinition('app.mailer');
-    // find out if there is an "app.mailer" definition or alias
+    // finds out if there is an "app.mailer" definition or alias
     $container->has('app.mailer');
 
-    // get the "app.user_config_manager" definition
+    // gets the "app.user_config_manager" definition
     $definition = $container->getDefinition('app.user_config_manager');
-    // get the definition with the "app.user_config_manager" ID or alias
-    $definition = $container->findDefinition($serviceId);
+    // gets the definition with the "app.user_config_manager" ID or alias
+    $definition = $container->findDefinition('app.user_config_manager');
 
-    // add a new "app.number_generator" definitions
-    $definition = new Definition('AppBundle\NumberGenerator');
+    // adds a new "app.number_generator" definition
+    $definition = new Definition(\App\NumberGenerator::class);
     $container->setDefinition('app.number_generator', $definition);
 
     // shortcut for the previous method
-    $container->register('app.number_generator', 'AppBundle\NumberGenerator');
+    $container->register('app.number_generator', \App\NumberGenerator::class);
 
 Working with a Definition
 -------------------------
@@ -54,12 +54,14 @@ Class
 The first optional argument of the ``Definition`` class is the fully qualified
 class name of the object returned when the service is fetched from the container::
 
+    use App\Config\UserConfigManager;
+    use App\Config\CustomConfigManager;
     use Symfony\Component\DependencyInjection\Definition;
 
-    $definition = new Definition('AppBundle\Config\UserConfigManager');
+    $definition = new Definition(UserConfigManager::class);
 
     // override the class
-    $definition->setClass('AppBundle\Config\CustomConfigManager');
+    $definition->setClass(CustomConfigManager::class);
 
     // get the class configured for this definition
     $class = $definition->getClass();
@@ -71,23 +73,25 @@ The second optional argument of the ``Definition`` class is an array with the
 arguments passed to the constructor of the object returned when the service is
 fetched from the container::
 
+    use App\Config\DoctrineConfigManager;
     use Symfony\Component\DependencyInjection\Definition;
+    use Symfony\Component\DependencyInjection\Reference;
 
-    $definition = new Definition('AppBundle\Config\DoctrineConfigManager', array(
+    $definition = new Definition(DoctrineConfigManager::class, array(
         new Reference('doctrine'), // a reference to another service
-        '%app.config_table_name%'  // will be resolved to the value of a container parameter
+        '%app.config_table_name%',  // will be resolved to the value of a container parameter
     ));
 
-    // get all arguments configured for this definition
+    // gets all arguments configured for this definition
     $constructorArguments = $definition->getArguments();
 
-    // get a specific argument
+    // gets a specific argument
     $firstArgument = $definition->getArgument(0);
 
-    // add a new argument
+    // adds a new argument
     $definition->addArgument($argument);
 
-    // replace argument on a specific index (0 = first argument)
+    // replaces argument on a specific index (0 = first argument)
     $definition->replaceArgument($index, $argument);
 
     // replace all previously configured arguments with the passed array
@@ -96,7 +100,7 @@ fetched from the container::
 .. caution::
 
     Don't use ``get()`` to get a service that you want to inject as constructor
-    argument, the service is not yet availabe. Instead, use inject a
+    argument, the service is not yet available. Instead, use a
     ``Reference`` instance as shown above.
 
 Method Calls
@@ -105,13 +109,13 @@ Method Calls
 If the service you are working with uses setter injection then you can manipulate
 any method calls in the definitions as well::
 
-    // get all configured method calls
+    // gets all configured method calls
     $methodCalls = $definition->getMethodCalls();
 
-    // configure a new method call
+    // configures a new method call
     $definition->addMethodCall('setLogger', array(new Reference('logger')));
 
-    // replace all previously configured method calls with the passed array
+    // replaces all previously configured method calls with the passed array
     $definition->setMethodCalls($methodCalls);
 
 .. tip::

@@ -16,18 +16,12 @@ software:
 * Git;
 * PHP version 5.5.9 or above.
 
-.. caution::
-
-   Before Symfony 2.7, the minimal PHP version was 5.3.3. Before Symfony 3.0,
-   minimal version was 5.3.9. Please keep this in mind, if you are working on a
-   bug fix for earlier versions of Symfony.
-
 Configure Git
 ~~~~~~~~~~~~~
 
 Set up your user information with your real name and a working email address:
 
-.. code-block:: bash
+.. code-block:: terminal
 
     $ git config --global user.name "Your Name"
     $ git config --global user.email you@example.com
@@ -53,14 +47,14 @@ Set up your user information with your real name and a working email address:
     repository. If you have already installed Git, you can check the value of
     this setting by typing:
 
-    .. code-block:: bash
+    .. code-block:: terminal
 
         $ git config core.autocrlf
 
     This will return either "false", "input" or "true"; "true" and "false" being
     the wrong values. Change it to "input" by typing:
 
-    .. code-block:: bash
+    .. code-block:: terminal
 
         $ git config --global core.autocrlf input
 
@@ -79,13 +73,13 @@ Get the Symfony source code:
 * After the "forking action" has completed, clone your fork locally
   (this will create a ``symfony`` directory):
 
-.. code-block:: bash
+.. code-block:: terminal
 
       $ git clone git@github.com:USERNAME/symfony.git
 
 * Add the upstream repository as a remote:
 
-.. code-block:: bash
+.. code-block:: terminal
 
       $ cd symfony
       $ git remote add upstream git://github.com/symfony/symfony.git
@@ -112,7 +106,7 @@ Choose the right Branch
 Before working on a patch, you must determine on which branch you need to
 work:
 
-* ``2.7``, if you are fixing a bug for an existing feature or want to make a
+* ``3.4``, if you are fixing a bug for an existing feature or want to make a
   change that falls into the :doc:`list of acceptable changes in patch versions
   </contributing/code/maintenance>` (you may have to choose a higher branch if
   the feature you are fixing was introduced in a later version);
@@ -123,7 +117,7 @@ work:
 
     All bug fixes merged into maintenance branches are also merged into more
     recent branches on a regular basis. For instance, if you submit a patch
-    for the ``2.7`` branch, the patch will also be applied by the core team on
+    for the ``3.4`` branch, the patch will also be applied by the core team on
     the ``master`` branch.
 
 Create a Topic Branch
@@ -132,22 +126,22 @@ Create a Topic Branch
 Each time you want to work on a patch for a bug or on an enhancement, create a
 topic branch:
 
-.. code-block:: bash
+.. code-block:: terminal
 
     $ git checkout -b BRANCH_NAME master
 
-Or, if you want to provide a bugfix for the ``2.7`` branch, first track the remote
-``2.7`` branch locally:
+Or, if you want to provide a bugfix for the ``3.4`` branch, first track the remote
+``3.4`` branch locally:
 
-.. code-block:: bash
+.. code-block:: terminal
 
-    $ git checkout -t origin/2.7
+    $ git checkout -t origin/3.4
 
-Then create a new branch off the ``2.7`` branch to work on the bugfix:
+Then create a new branch off the ``3.4`` branch to work on the bugfix:
 
-.. code-block:: bash
+.. code-block:: terminal
 
-    $ git checkout -b BRANCH_NAME 2.7
+    $ git checkout -b BRANCH_NAME 3.4
 
 .. tip::
 
@@ -156,6 +150,22 @@ Then create a new branch off the ``2.7`` branch to work on the bugfix:
 
 The above checkout commands automatically switch the code to the newly created
 branch (check the branch you are working on with ``git branch``).
+
+Use your Branch in an Existing Project
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If you want to test your code in an existing project that uses ``symfony/symfony``
+or Symfony components, you can use the ``link`` utility provided in the Git repository
+you cloned previously.
+This tool scans the ``vendor/`` directory of your project, finds Symfony packages it
+uses, and replaces them by symbolic links to the ones in the Git repository.
+
+.. code-block:: terminal
+
+    $ php link /path/to/your/project
+
+Before running the ``link`` command, be sure that the dependencies of the project you
+want to debug are installed by running ``composer install`` inside it.
 
 Work on your Patch
 ~~~~~~~~~~~~~~~~~~
@@ -225,7 +235,7 @@ Rebase your Patch
 Before submitting your patch, update your branch (needed if it takes you a
 while to finish your changes):
 
-.. code-block:: bash
+.. code-block:: terminal
 
     $ git checkout master
     $ git fetch upstream
@@ -235,21 +245,21 @@ while to finish your changes):
 
 .. tip::
 
-    Replace ``master`` with the branch you selected previously (e.g. ``2.7``)
+    Replace ``master`` with the branch you selected previously (e.g. ``3.4``)
     if you are working on a bugfix
 
 When doing the ``rebase`` command, you might have to fix merge conflicts.
 ``git status`` will show you the *unmerged* files. Resolve all the conflicts,
 then continue the rebase:
 
-.. code-block:: bash
+.. code-block:: terminal
 
     $ git add ... # add resolved files
     $ git rebase --continue
 
 Check that all tests still pass and push your branch remotely:
 
-.. code-block:: bash
+.. code-block:: terminal
 
     $ git push --force origin BRANCH_NAME
 
@@ -262,8 +272,8 @@ You can now make a pull request on the ``symfony/symfony`` GitHub repository.
 
 .. tip::
 
-    Take care to point your pull request towards ``symfony:2.7`` if you want
-    the core team to pull a bugfix based on the ``2.7`` branch.
+    Take care to point your pull request towards ``symfony:3.4`` if you want
+    the core team to pull a bugfix based on the ``3.4`` branch.
 
 To ease the core team work, always include the modified components in your
 pull request message, like in:
@@ -334,9 +344,9 @@ Rework your Patch
 
 Based on the feedback on the pull request, you might need to rework your
 patch. Before re-submitting the patch, rebase with ``upstream/master`` or
-``upstream/2.7``, don't merge; and force the push to the origin:
+``upstream/3.4``, don't merge; and force the push to the origin:
 
-.. code-block:: bash
+.. code-block:: terminal
 
     $ git rebase -f upstream/master
     $ git push --force origin BRANCH_NAME
@@ -352,15 +362,15 @@ convert many commits to one commit. This is no longer necessary today, because
 Symfony project uses a proprietary tool which automatically squashes all commits
 before merging.
 
-.. _ProGit: http://git-scm.com/book
+.. _ProGit: https://git-scm.com/book
 .. _GitHub: https://github.com/join
 .. _`GitHub's Documentation`: https://help.github.com/articles/ignoring-files
 .. _Symfony repository: https://github.com/symfony/symfony
-.. _dev mailing-list: http://groups.google.com/group/symfony-devs
+.. _dev mailing-list: https://groups.google.com/group/symfony-devs
 .. _travis-ci.org: https://travis-ci.org/
-.. _`travis-ci.org status icon`: http://about.travis-ci.org/docs/user/status-images/
-.. _`travis-ci.org Getting Started Guide`: http://about.travis-ci.org/docs/user/getting-started/
+.. _`travis-ci.org status icon`: https://about.travis-ci.com/docs/user/status-images/
+.. _`travis-ci.org Getting Started Guide`: https://about.travis-ci.com/docs/user/getting-started/
 .. _`documentation repository`: https://github.com/symfony/symfony-docs
-.. _`fabbot`: http://fabbot.io
-.. _`PSR-1`: http://www.php-fig.org/psr/psr-1/
-.. _`PSR-2`: http://www.php-fig.org/psr/psr-2/
+.. _`fabbot`: https://fabbot.io
+.. _`PSR-1`: https://www.php-fig.org/psr/psr-1/
+.. _`PSR-2`: https://www.php-fig.org/psr/psr-2/

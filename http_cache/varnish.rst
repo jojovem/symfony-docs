@@ -5,7 +5,7 @@ How to Use Varnish to Speed up my Website
 =========================================
 
 Because Symfony's cache uses the standard HTTP cache headers, the
-:ref:`symfony-gateway-cache` can easily be replaced with any other reverse
+:ref:`symfony-gateway-cache` can be replaced with any other reverse
 proxy. `Varnish`_ is a powerful, open-source, HTTP accelerator capable of serving
 cached content fast and including support for :doc:`Edge Side Includes </http_cache/esi>`.
 
@@ -20,24 +20,9 @@ Varnish automatically forwards the IP as ``X-Forwarded-For`` and leaves the
 trusted proxy, Symfony will see all requests as coming through insecure HTTP
 connections from the Varnish host instead of the real client.
 
-Remember to configure :ref:`framework.trusted_proxies <reference-framework-trusted-proxies>`
-in the Symfony configuration so that Varnish is seen as a trusted proxy and the
-:ref:`X-Forwarded <varnish-x-forwarded-headers>` headers are used.
-
-Varnish, in its default configuration, sends the ``X-Forwarded-For`` header but
-does not filter out the ``Forwarded`` header. If you have access to the Varnish
-configuration file, you can configure Varnish to remove the ``Forwarded``
-header:
-
-.. code-block:: varnish4
-
-    sub vcl_recv {
-        remove req.http.Forwarded;
-    }
-
-If you do not have access to your Varnish configuration, you can instead
-configure Symfony to distrust the ``Forwarded`` header as detailed in
-:ref:`How to Configure Symfony to Work behind a Load Balancer or a Reverse Proxy <request-untrust-header>`.
+Remember to call the :ref:`Request::setTrustedProxies() <request-set-trusted-proxies>`
+method in your front controller so that Varnish is seen as a trusted proxy
+and the :ref:`X-Forwarded-* <varnish-x-forwarded-headers>` headers are used.
 
 .. _varnish-x-forwarded-headers:
 
@@ -77,7 +62,7 @@ If you know for sure that the backend never uses sessions or basic
 authentication, have Varnish remove the corresponding header from requests to
 prevent clients from bypassing the cache. In practice, you will need sessions
 at least for some parts of the site, e.g. when using forms with
-:doc:`CSRF Protection </form/csrf_protection>`. In this situation, make sure to
+:doc:`CSRF Protection </security/csrf>`. In this situation, make sure to
 :doc:`only start a session when actually needed </session/avoid_session_start>`
 and clear the session when it is no longer needed. Alternatively, you can look
 into :doc:`/http_cache/form_csrf_caching`.
@@ -102,7 +87,7 @@ configuration of PHP, your session cookie has the name ``PHPSESSID``:
                 set req.http.Cookie = regsuball(req.http.Cookie, ";(PHPSESSID)=", "; \1=");
                 set req.http.Cookie = regsuball(req.http.Cookie, ";[^ ][^;]*", "");
                 set req.http.Cookie = regsuball(req.http.Cookie, "^[; ]+|[; ]+$", "");
-    
+
                 if (req.http.Cookie == "") {
                     // If there are no more cookies, remove the header to get page cached.
                     unset req.http.Cookie;
@@ -120,7 +105,7 @@ configuration of PHP, your session cookie has the name ``PHPSESSID``:
                 set req.http.Cookie = regsuball(req.http.Cookie, ";(PHPSESSID)=", "; \1=");
                 set req.http.Cookie = regsuball(req.http.Cookie, ";[^ ][^;]*", "");
                 set req.http.Cookie = regsuball(req.http.Cookie, "^[; ]+|[; ]+$", "");
-    
+
                 if (req.http.Cookie == "") {
                     // If there are no more cookies, remove the header to get page cached.
                     remove req.http.Cookie;
@@ -168,7 +153,7 @@ using Varnish 3:
 Enable Edge Side Includes (ESI)
 -------------------------------
 
-As explained in the :doc:`Edge Side Includes chapter </http_cache/esi>`, Symfony
+As explained in the :doc:`Edge Side Includes article </http_cache/esi>`, Symfony
 detects whether it talks to a reverse proxy that understands ESI or not. When
 you use the Symfony reverse proxy, you don't need to do anything. But to make
 Varnish instead of Symfony resolve the ESI tags, you need some configuration
@@ -226,7 +211,7 @@ Symfony adds automatically:
 .. tip::
 
     If you followed the advice about ensuring a consistent caching
-    behavior, those VCL functions already exist. Just append the code
+    behavior, those VCL functions already exist. Append the code
     to the end of the function, they won't interfere with each other.
 
 .. index::

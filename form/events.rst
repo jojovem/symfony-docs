@@ -11,11 +11,8 @@ Using form events, you may modify information or fields at different steps
 of the workflow: from the population of the form to the submission of the
 data from the request.
 
-Registering an event listener is very easy using the Form component.
-
-For example, if you wish to register a function to the
-``FormEvents::PRE_SUBMIT`` event, the following code lets you add a field,
-depending on the request values::
+For example, if you need to add a field depending on request values, you can
+register an event listener to the ``FormEvents::PRE_SUBMIT`` event as follows::
 
     // ...
 
@@ -84,8 +81,8 @@ View data        ``null``
 
 .. sidebar:: ``FormEvents::PRE_SET_DATA`` in the Form component
 
-    The ``collection`` form type relies on the
-    ``Symfony\Component\Form\Extension\Core\EventListener\ResizeFormListener``
+    The ``Symfony\Component\Form\Extension\Core\Type\CollectionType`` form type relies
+    on the ``Symfony\Component\Form\Extension\Core\EventListener\ResizeFormListener``
     subscriber, listening to the ``FormEvents::PRE_SET_DATA`` event in order
     to reorder the form's fields depending on the data from the pre-populated
     object, by removing and adding all form rows.
@@ -166,7 +163,7 @@ View data        Same as in ``FormEvents::POST_SET_DATA``
 B) The ``FormEvents::SUBMIT`` Event
 ...................................
 
-The ``FormEvents::SUBMIT`` event is dispatched just before the
+The ``FormEvents::SUBMIT`` event is dispatched right before the
 :method:`Form::submit() <Symfony\\Component\\Form\\Form::submit>` method
 transforms back the normalized data to the model and view data.
 
@@ -219,7 +216,8 @@ View data        Normalized data transformed using a view transformer
 
 .. caution::
 
-    At this point, you cannot add or remove fields to the form.
+    At this point, you cannot add or remove fields to the current form and its
+    children.
 
 .. sidebar:: ``FormEvents::POST_SUBMIT`` in the Form component
 
@@ -228,8 +226,7 @@ View data        Normalized data transformed using a view transformer
     information about the forms.
     The ``Symfony\Component\Form\Extension\Validator\EventListener\ValidationListener``
     subscribes to the ``FormEvents::POST_SUBMIT`` event in order to
-    automatically validate the denormalized object and to update the normalized
-    representation as well as the view representations.
+    automatically validate the denormalized object.
 
 Registering Event Listeners or Event Subscribers
 ------------------------------------------------
@@ -252,17 +249,17 @@ Name                    ``FormEvents`` Constant        Event's Data
 ======================  =============================  ===============
 ``form.pre_set_data``   ``FormEvents::PRE_SET_DATA``   Model data
 ``form.post_set_data``  ``FormEvents::POST_SET_DATA``  Model data
-``form.pre_bind``       ``FormEvents::PRE_SUBMIT``     Request data
-``form.bind``           ``FormEvents::SUBMIT``         Normalized data
-``form.post_bind``      ``FormEvents::POST_SUBMIT``    View data
+``form.pre_submit``     ``FormEvents::PRE_SUBMIT``     Request data
+``form.submit``         ``FormEvents::SUBMIT``         Normalized data
+``form.post_submit``    ``FormEvents::POST_SUBMIT``    View data
 ======================  =============================  ===============
 
 Event Listeners
 ~~~~~~~~~~~~~~~
 
-An event listener may be any type of valid callable.
-
-Creating and binding an event listener to the form is very easy::
+An event listener may be any type of valid callable. For example, you can
+define an event listener function inline right in the ``addEventListener``
+method of the ``FormFactory``::
 
     // ...
 
@@ -283,7 +280,7 @@ Creating and binding an event listener to the form is very easy::
                 return;
             }
 
-            // Check whether the user has chosen to display his email or not.
+            // checks whether the user has chosen to display their email or not.
             // If the data was submitted previously, the additional value that is
             // included in the request variables needs to be removed.
             if (true === $user['show_email']) {
@@ -300,11 +297,12 @@ Creating and binding an event listener to the form is very easy::
 When you have created a form type class, you can use one of its methods as a
 callback for better readability::
 
-    // src/AppBundle/Form/SubscriptionType.php
-    namespace AppBundle\Form;
+    // src/Form/SubscriptionType.php
+    namespace App\Form;
 
     use Symfony\Component\Form\Extension\Core\Type\TextType;
     use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
+    use Symfony\Component\Form\FormEvent;
     use Symfony\Component\Form\FormEvents;
 
     // ...
@@ -339,8 +337,8 @@ Event subscribers have different uses:
 
 .. code-block:: php
 
-    // src/AppBundle/Form/EventListener/AddEmailFieldListener.php
-    namespace AppBundle\Form\EventListener;
+    // src/Form/EventListener/AddEmailFieldListener.php
+    namespace App\Form\EventListener;
 
     use Symfony\Component\EventDispatcher\EventSubscriberInterface;
     use Symfony\Component\Form\FormEvent;
@@ -362,8 +360,8 @@ Event subscribers have different uses:
             $user = $event->getData();
             $form = $event->getForm();
 
-            // Check whether the user from the initial data has chosen to
-            // display his email or not.
+            // checks whether the user from the initial data has chosen to
+            // display their email or not.
             if (true === $user->isShowEmail()) {
                 $form->add('email', EmailType::class);
             }
@@ -378,7 +376,7 @@ Event subscribers have different uses:
                 return;
             }
 
-            // Check whether the user has chosen to display his email or not.
+            // checks whether the user has chosen to display their email or not.
             // If the data was submitted previously, the additional value that
             // is included in the request variables needs to be removed.
             if (true === $user['show_email']) {
@@ -392,9 +390,9 @@ Event subscribers have different uses:
 
 To register the event subscriber, use the ``addEventSubscriber()`` method::
 
+    use App\Form\EventListener\AddEmailFieldListener;
     use Symfony\Component\Form\Extension\Core\Type\TextType;
     use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
-        use AppBundle\Form\EventListener\AddEmailFieldListener;
 
     // ...
 

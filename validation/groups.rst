@@ -1,8 +1,8 @@
 .. index::
     single: Validation; Groups
 
-How to Apply only a Subset of all Your Validation Constraints
-=============================================================
+How to Apply only a Subset of all Your Validation Constraints (Validation Groups)
+=================================================================================
 
 By default, when validating an object all constraints of this class will
 be checked whether or not they actually pass. In some cases, however, you
@@ -17,8 +17,8 @@ user registers and when a user updates their contact information later:
 
     .. code-block:: php-annotations
 
-        // src/AppBundle/Entity/User.php
-        namespace AppBundle\Entity;
+        // src/Entity/User.php
+        namespace App\Entity;
 
         use Symfony\Component\Security\Core\User\UserInterface;
         use Symfony\Component\Validator\Constraints as Assert;
@@ -44,8 +44,8 @@ user registers and when a user updates their contact information later:
 
     .. code-block:: yaml
 
-        # src/AppBundle/Resources/config/validation.yml
-        AppBundle\Entity\User:
+        # config/validator/validation.yaml
+        App\Entity\User:
             properties:
                 email:
                     - Email: { groups: [registration] }
@@ -58,7 +58,7 @@ user registers and when a user updates their contact information later:
 
     .. code-block:: xml
 
-        <!-- src/AppBundle/Resources/config/validation.xml -->
+        <!-- config/validator/validation.xml -->
         <?xml version="1.0" encoding="UTF-8" ?>
         <constraint-mapping xmlns="http://symfony.com/schema/dic/constraint-mapping"
             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -67,7 +67,7 @@ user registers and when a user updates their contact information later:
                 http://symfony.com/schema/dic/constraint-mapping/constraint-mapping-1.0.xsd
             ">
 
-            <class name="AppBundle\Entity\User">
+            <class name="App\Entity\User">
                 <property name="email">
                     <constraint name="Email">
                         <option name="groups">
@@ -100,8 +100,8 @@ user registers and when a user updates their contact information later:
 
     .. code-block:: php
 
-        // src/AppBundle/Entity/User.php
-        namespace AppBundle\Entity;
+        // src/Entity/User.php
+        namespace App\Entity;
 
         use Symfony\Component\Validator\Mapping\ClassMetadata;
         use Symfony\Component\Validator\Constraints as Assert;
@@ -137,7 +137,7 @@ With this configuration, there are three validation groups:
 ``User``
     Equivalent to all constraints of the ``User`` object in the ``Default``
     group. This is always the name of the class. The difference between this
-    and ``Default`` is explained below.
+    and ``Default`` is explained in :doc:`/validation/sequence_provider`.
 
 ``registration``
     Contains the constraints on the ``email`` and ``password`` fields only.
@@ -179,6 +179,6 @@ as the third argument to the ``validate()`` method::
 If no groups are specified, all constraints that belong to the group ``Default``
 will be applied.
 
-Of course, you'll usually work with validation indirectly through the form
+In a full stack Symfony project, you'll usually work with validation indirectly through the form
 library. For information on how to use validation groups inside forms, see
 :doc:`/form/validation_groups`.

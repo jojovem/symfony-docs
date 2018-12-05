@@ -24,34 +24,38 @@ Imagine you want to send spooled Swift Mailer messages by
 :doc:`using the swiftmailer:spool:send command </email/spool>`.
 Run this command from inside your controller via::
 
-    // src/AppBundle/Controller/SpoolController.php
-    namespace AppBundle\Controller;
+    // src/Controller/SpoolController.php
+    namespace App\Controller;
 
     use Symfony\Bundle\FrameworkBundle\Console\Application;
-    use Symfony\Bundle\FrameworkBundle\Controller\Controller;
+    use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
     use Symfony\Component\Console\Input\ArrayInput;
     use Symfony\Component\Console\Output\BufferedOutput;
     use Symfony\Component\HttpFoundation\Response;
+    use Symfony\Component\HttpKernel\KernelInterface;
 
-    class SpoolController extends Controller
+    class SpoolController extends AbstractController
     {
-        public function sendSpoolAction($messages = 10)
+        public function sendSpool($messages = 10, KernelInterface $kernel)
         {
-            $kernel = $this->get('kernel');
             $application = new Application($kernel);
             $application->setAutoExit(false);
 
             $input = new ArrayInput(array(
                'command' => 'swiftmailer:spool:send',
+               // (optional) define the value of command arguments
+               'fooArgument' => 'barValue',
+               // (optional) pass options to the command
                '--message-limit' => $messages,
             ));
+
             // You can use NullOutput() if you don't need the output
             $output = new BufferedOutput();
             $application->run($input, $output);
 
             // return the output, don't use if you used NullOutput()
             $content = $output->fetch();
-            
+
             // return new Response(""), if you used NullOutput()
             return new Response($content);
         }
@@ -66,14 +70,14 @@ can be used to convert this to colorful HTML.
 
 First, require the package:
 
-.. code-block:: bash
+.. code-block:: terminal
 
     $ composer require sensiolabs/ansi-to-html
 
 Now, use it in your controller::
 
-    // src/AppBundle/Controller/SpoolController.php
-    namespace AppBundle\Controller;
+    // src/Controller/SpoolController.php
+    namespace App\Controller;
 
     use SensioLabs\AnsiConverter\AnsiToHtmlConverter;
     use Symfony\Component\Console\Output\BufferedOutput;
@@ -81,9 +85,9 @@ Now, use it in your controller::
     use Symfony\Component\HttpFoundation\Response;
     // ...
 
-    class SpoolController extends Controller
+    class SpoolController extends AbstractController
     {
-        public function sendSpoolAction($messages = 10)
+        public function sendSpool($messages = 10)
         {
             // ...
             $output = new BufferedOutput(

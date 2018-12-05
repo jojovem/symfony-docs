@@ -14,70 +14,48 @@ Symfony uses templates to render each and every part of a form, such as
 ``label`` tags, ``input`` tags, error messages and everything else.
 
 In Twig, each form "fragment" is represented by a Twig block. To customize
-any part of how a form renders, you just need to override the appropriate block.
+any part of how a form renders, you need to override the appropriate block.
 
 In PHP, each form "fragment" is rendered via an individual template file.
-To customize any part of how a form renders, you just need to override the
+To customize any part of how a form renders, override the
 existing template by creating a new one.
 
 To understand how this works, customize the ``form_row`` fragment and
 add a class attribute to the ``div`` element that surrounds each row. To
 do this, create a new template file that will store the new markup:
 
-.. configuration-block::
+.. code-block:: html+twig
 
-    .. code-block:: html+twig
-
-        {# app/Resources/views/form/fields.html.twig #}
-        {% block form_row %}
-        {% spaceless %}
-            <div class="form_row">
-                {{ form_label(form) }}
-                {{ form_errors(form) }}
-                {{ form_widget(form) }}
-            </div>
-        {% endspaceless %}
-        {% endblock form_row %}
-
-    .. code-block:: html+php
-
-        <!-- app/Resources/views/form/form_row.html.php -->
+    {# templates/form/fields.html.twig #}
+    {% block form_row %}
+    {% spaceless %}
         <div class="form_row">
-            <?php echo $view['form']->label($form, $label) ?>
-            <?php echo $view['form']->errors($form) ?>
-            <?php echo $view['form']->widget($form, $parameters) ?>
+            {{ form_label(form) }}
+            {{ form_errors(form) }}
+            {{ form_widget(form) }}
+            {{ form_help(form) }}
         </div>
+    {% endspaceless %}
+    {% endblock form_row %}
 
 The ``form_row`` form fragment is used when rendering most fields via the
-``form_row`` function. To tell the Form component to use your new ``form_row``
+``form_row()`` function. To tell the Form component to use your new ``form_row``
 fragment defined above, add the following to the top of the template that
 renders the form:
 
-.. configuration-block::
+.. code-block:: html+twig
 
-    .. code-block:: html+twig
+    {# templates/default/new.html.twig #}
+    {% form_theme form 'form/fields.html.twig' %}
 
-        {# app/Resources/views/default/new.html.twig #}
-        {% form_theme form 'form/fields.html.twig' %}
+    {# or if you want to use multiple themes #}
+    {% form_theme form 'form/fields.html.twig' 'form/fields2.html.twig' %}
 
-        {# or if you want to use multiple themes #}
-        {% form_theme form 'form/fields.html.twig' 'form/fields2.html.twig' %}
-
-        {# ... render the form #}
-
-    .. code-block:: html+php
-
-        <!-- app/Resources/views/default/new.html.php -->
-        <?php $view['form']->setTheme($form, array('form')) ?>
-
-        <!-- or if you want to use multiple themes -->
-        <?php $view['form']->setTheme($form, array('form', 'form2')) ?>
-
-        <!-- ... render the form -->
+    {# ... render the form #}
 
 The ``form_theme`` tag (in Twig) "imports" the fragments defined in the given
 template and uses them when rendering the form. In other words, when the
-``form_row`` function is called later in this template, it will use the ``form_row``
+``form_row()`` function is called later in this template, it will use the ``form_row``
 block from your custom theme (instead of the default ``form_row`` block
 that ships with Symfony).
 
@@ -88,7 +66,7 @@ to the global theme (defined at the bundle level).
 If several custom themes are provided they will be searched in the listed order
 before falling back to the global theme.
 
-To customize any portion of a form, you just need to override the appropriate
+To customize any portion of a form, override the appropriate
 fragment. Knowing exactly which block or file to override is the subject of
 the next section.
 
@@ -117,10 +95,10 @@ the ``Resources/views/Form`` directory of the FrameworkBundle (`view on GitHub`_
 Each fragment name follows the same basic pattern and is broken up into two pieces,
 separated by a single underscore character (``_``). A few examples are:
 
-* ``form_row`` - used by ``form_row`` to render most fields;
-* ``textarea_widget`` - used by ``form_widget`` to render a ``textarea`` field
+* ``form_row`` - used by ``form_row()`` to render most fields;
+* ``textarea_widget`` - used by ``form_widget()`` to render a ``textarea`` field
   type;
-* ``form_errors`` - used by ``form_errors`` to render errors for a field;
+* ``form_errors`` - used by ``form_errors()`` to render errors for a field;
 
 Each fragment follows the same basic pattern: ``type_part``. The ``type`` portion
 corresponds to the field *type* being rendered (e.g. ``textarea``, ``checkbox``,
@@ -128,15 +106,17 @@ corresponds to the field *type* being rendered (e.g. ``textarea``, ``checkbox``,
 rendered (e.g. ``label``, ``widget``, ``errors``, etc). By default, there
 are 4 possible *parts* of a form that can be rendered:
 
-+-------------+--------------------------+---------------------------------------------------------+
-| ``label``   | (e.g. ``form_label``)    | renders the field's label                               |
-+-------------+--------------------------+---------------------------------------------------------+
-| ``widget``  | (e.g. ``form_widget``)   | renders the field's HTML representation                 |
-+-------------+--------------------------+---------------------------------------------------------+
-| ``errors``  | (e.g. ``form_errors``)   | renders the field's errors                              |
-+-------------+--------------------------+---------------------------------------------------------+
-| ``row``     | (e.g. ``form_row``)      | renders the field's entire row (label, widget & errors) |
-+-------------+--------------------------+---------------------------------------------------------+
++-------------+----------------------------+---------------------------------------------------------+
+| ``label``   | (e.g. ``form_label()``)    | renders the field's label                               |
++-------------+----------------------------+---------------------------------------------------------+
+| ``widget``  | (e.g. ``form_widget()``)   | renders the field's HTML representation                 |
++-------------+----------------------------+---------------------------------------------------------+
+| ``errors``  | (e.g. ``form_errors()``)   | renders the field's errors                              |
++-------------+----------------------------+---------------------------------------------------------+
+| ``help``    | (e.g. ``form_help()``)     | renders the field's help                                |
++-------------+----------------------------+---------------------------------------------------------+
+| ``row``     | (e.g. ``form_row()``)      | renders the field's entire row (label, widget & errors) |
++-------------+----------------------------+---------------------------------------------------------+
 
 .. note::
 
@@ -199,23 +179,26 @@ file:
 
     .. code-block:: yaml
 
-        # app/config/config.yml
+        # config/packages/twig.yaml
         twig:
             form_themes:
+                - '...'
                 - 'form/fields.html.twig'
             # ...
 
     .. code-block:: xml
 
-        <!-- app/config/config.xml -->
+        <!-- config/packages/twig.xml -->
         <?xml version="1.0" encoding="UTF-8" ?>
         <container xmlns="http://symfony.com/schema/dic/services"
             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
             xmlns:twig="http://symfony.com/schema/dic/twig"
-            xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/schema/dic/services/services-1.0.xsd
+            xsi:schemaLocation="http://symfony.com/schema/dic/services
+                http://symfony.com/schema/dic/services/services-1.0.xsd
                 http://symfony.com/schema/dic/twig http://symfony.com/schema/dic/twig/twig-1.0.xsd">
 
             <twig:config>
+                <twig:theme>...</twig:theme>
                 <twig:theme>form/fields.html.twig</twig:theme>
                 <!-- ... -->
             </twig:config>
@@ -223,13 +206,19 @@ file:
 
     .. code-block:: php
 
-        // app/config/config.php
+        // config/packages/twig.php
         $container->loadFromExtension('twig', array(
             'form_themes' => array(
+                '...',
                 'form/fields.html.twig',
             ),
             // ...
         ));
+
+.. note::
+
+    Add your custom theme at the end of the ``form_themes`` list because each
+    theme overrides all the previous themes.
 
 Any blocks inside the ``fields.html.twig`` template are now used globally
 to define form output.
@@ -271,7 +260,7 @@ to define form output.
 PHP
 ...
 
-To automatically include the customized templates from the ``app/Resources/views/Form``
+To automatically include the customized templates from the ``templates/form``
 directory created earlier in *all* templates, modify your application configuration
 file:
 
@@ -279,28 +268,29 @@ file:
 
     .. code-block:: yaml
 
-        # app/config/config.yml
+        # config/packages/framework.yaml
         framework:
             templating:
                 form:
                     resources:
-                        - 'Form'
+                        - 'form'
         # ...
 
     .. code-block:: xml
 
-        <!-- app/config/config.xml -->
+        <!-- config/packages/framework.xml -->
         <?xml version="1.0" encoding="UTF-8" ?>
         <container xmlns="http://symfony.com/schema/dic/services"
             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
             xmlns:framework="http://symfony.com/schema/dic/symfony"
-            xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/schema/dic/services/services-1.0.xsd
+            xsi:schemaLocation="http://symfony.com/schema/dic/services
+                http://symfony.com/schema/dic/services/services-1.0.xsd
                 http://symfony.com/schema/dic/symfony http://symfony.com/schema/dic/symfony/symfony-1.0.xsd">
 
             <framework:config>
                 <framework:templating>
                     <framework:form>
-                        <framework:resource>Form</framework:resource>
+                        <framework:resource>form</framework:resource>
                     </framework:form>
                 </framework:templating>
                 <!-- ... -->
@@ -309,19 +299,19 @@ file:
 
     .. code-block:: php
 
-        // app/config/config.php
+        // config/packages/framework.php
         $container->loadFromExtension('framework', array(
             'templating' => array(
                 'form' => array(
                     'resources' => array(
-                        'Form',
+                        'form',
                     ),
                 ),
             ),
             // ...
         ));
 
-Any fragments inside the ``app/Resources/views/Form`` directory are now used
+Any fragments inside the ``templates/form`` directory are now used
 globally to define form output.
 
 .. _`form_div_layout.html.twig`: https://github.com/symfony/symfony/blob/master/src/Symfony/Bridge/Twig/Resources/views/Form/form_div_layout.html.twig

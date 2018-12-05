@@ -14,7 +14,7 @@ the session lasts using a cookie with the ``remember_me`` firewall option:
 
     .. code-block:: yaml
 
-        # app/config/security.yml
+        # config/packages/security.yaml
         security:
             # ...
 
@@ -22,7 +22,7 @@ the session lasts using a cookie with the ``remember_me`` firewall option:
                 main:
                     # ...
                     remember_me:
-                        secret:   '%secret%'
+                        secret:   '%kernel.secret%'
                         lifetime: 604800 # 1 week in seconds
                         path:     /
                         # by default, the feature is enabled by checking a
@@ -32,7 +32,7 @@ the session lasts using a cookie with the ``remember_me`` firewall option:
 
     .. code-block:: xml
 
-        <!-- app/config/security.xml -->
+        <!-- config/packages/security.xml -->
         <?xml version="1.0" encoding="utf-8" ?>
         <srv:container xmlns="http://symfony.com/schema/dic/security"
             xmlns:srv="http://symfony.com/schema/dic/services"
@@ -48,7 +48,7 @@ the session lasts using a cookie with the ``remember_me`` firewall option:
 
                     <!-- 604800 is 1 week in seconds -->
                     <remember-me
-                        secret="%secret%"
+                        secret="%kernel.secret%"
                         lifetime="604800"
                         path="/" />
                     <!-- by default, the feature is enabled by checking a checkbox
@@ -60,7 +60,7 @@ the session lasts using a cookie with the ``remember_me`` firewall option:
 
     .. code-block:: php
 
-        // app/config/security.php
+        // config/packages/security.php
         $container->loadFromExtension('security', array(
             // ...
 
@@ -68,7 +68,7 @@ the session lasts using a cookie with the ``remember_me`` firewall option:
                 'main' => array(
                     // ...
                     'remember_me' => array(
-                        'secret'   => '%secret%',
+                        'secret'   => '%kernel.secret%',
                         'lifetime' => 604800, // 1 week in seconds
                         'path'     => '/',
                         // by default, the feature is enabled by checking a
@@ -84,7 +84,7 @@ The ``remember_me`` firewall defines the following configuration options:
 
 ``secret`` (**required**)
     The value used to encrypt the cookie's content. It's common to use the
-    ``secret`` value defined in the ``app/config/parameters.yml`` file.
+    ``secret`` value defined in the ``APP_SECRET`` environment variable.
 
 ``name`` (default value: ``REMEMBERME``)
     The name of the cookie used to keep the user logged in. If you enable the
@@ -113,6 +113,10 @@ The ``remember_me`` firewall defines the following configuration options:
     If ``true``, the cookie associated with this feature is accessible only
     through the HTTP protocol. This means that the cookie won't be accessible
     by scripting languages, such as JavaScript.
+
+``samesite`` (default value: ``null``)
+    If set to ``strict``, the cookie associated with this feature will not
+    be sent along with cross-site requests, even when following a regular link.
 
 ``remember_me_parameter`` (default value: ``_remember_me``)
     The name of the form field checked to decide if the "Remember Me" feature
@@ -143,48 +147,18 @@ the cookie will automatically be set when the checkbox is checked and the user
 successfully logs in. So, your specific login form might ultimately look like
 this:
 
-.. configuration-block::
+.. code-block:: html+twig
 
-    .. code-block:: html+twig
+    {# templates/security/login.html.twig #}
 
-        {# app/Resources/views/security/login.html.twig #}
-        {% if error %}
-            <div>{{ error.message }}</div>
-        {% endif %}
+    <form method="post">
+        {# ... your form fields #}
 
-        <form action="{{ path('login') }}" method="post">
-            <label for="username">Username:</label>
-            <input type="text" id="username" name="_username" value="{{ last_username }}" />
+        <input type="checkbox" id="remember_me" name="_remember_me" checked />
+        <label for="remember_me">Keep me logged in</label>
 
-            <label for="password">Password:</label>
-            <input type="password" id="password" name="_password" />
-
-            <input type="checkbox" id="remember_me" name="_remember_me" checked />
-            <label for="remember_me">Keep me logged in</label>
-
-            <input type="submit" name="login" />
-        </form>
-
-    .. code-block:: html+php
-
-        <!-- app/Resources/views/security/login.html.php -->
-        <?php if ($error): ?>
-            <div><?php echo $error->getMessage() ?></div>
-        <?php endif ?>
-
-        <form action="<?php echo $view['router']->path('login') ?>" method="post">
-            <label for="username">Username:</label>
-            <input type="text" id="username"
-                   name="_username" value="<?php echo $last_username ?>" />
-
-            <label for="password">Password:</label>
-            <input type="password" id="password" name="_password" />
-
-            <input type="checkbox" id="remember_me" name="_remember_me" checked />
-            <label for="remember_me">Keep me logged in</label>
-
-            <input type="submit" name="login" />
-        </form>
+        {# ... #}
+    </form>
 
 The user will then automatically be logged in on subsequent visits while
 the cookie remains valid.
@@ -199,92 +173,26 @@ visiting the site.
 
 In some cases, however, you may want to force the user to actually re-authenticate
 before accessing certain resources. For example, you might allow "remember me"
-users to see basic account information, but then require them to actually
-re-authenticate before modifying that information.
+users to change their password. You can do this by leveraing a few special "roles"::
 
-The Security component provides an easy way to do this. In addition to roles
-explicitly assigned to them, users are automatically given one of the following
-roles depending on how they are authenticated:
-
-``IS_AUTHENTICATED_ANONYMOUSLY``
-    Automatically assigned to a user who is in a firewall protected part of the
-    site but who has not actually logged in. This is only possible if anonymous
-    access has been allowed.
-
-``IS_AUTHENTICATED_REMEMBERED``
-    Automatically assigned to a user who was authenticated via a remember me
-    cookie.
-
-``IS_AUTHENTICATED_FULLY``
-    Automatically assigned to a user that has provided their login details
-    during the current session.
-
-You can use these to control access beyond the explicitly assigned roles.
-
-.. note::
-
-    If you have the ``IS_AUTHENTICATED_REMEMBERED`` role, then you also
-    have the ``IS_AUTHENTICATED_ANONYMOUSLY`` role. If you have the ``IS_AUTHENTICATED_FULLY``
-    role, then you also have the other two roles. In other words, these roles
-    represent three levels of increasing "strength" of authentication.
-
-You can use these additional roles for finer grained control over access to
-parts of a site. For example, you may want your user to be able to view their
-account at ``/account`` when authenticated by cookie but to have to provide
-their login details to be able to edit the account details. You can do this
-by securing specific controller actions using these roles. The edit action
-in the controller could be secured using the service context.
-
-In the following example, the action is only allowed if the user has the
-``IS_AUTHENTICATED_FULLY`` role.
-
-.. code-block:: php
-
+    // src/Controller/AccountController.php
     // ...
-    use Symfony\Component\Security\Core\Exception\AccessDeniedException
-
-    // ...
-    public function editAction()
+    
+    public function accountInfo()
     {
+        // allow any authenticated user - we don't care if they just
+        // logged in, or are logged in via a remember me cookie
+        $this->denyAccessUnlessGranted('IS_AUTHENTICATED_REMEMBERED');
+
+        // ...
+    }
+
+    public function resetPassword()
+    {
+        // require the user to log in during *this* session
+        // if they were only logged in via a remember me cookie, they
+        // will be redirected to the login page
         $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
 
         // ...
     }
-
-If your application is based on the Symfony Standard Edition, you can also secure
-your controller using annotations:
-
-.. code-block:: php
-
-    use Sensio\Bundle\FrameworkExtraBundle\Configuration\Security;
-
-    /**
-     * @Security("has_role('IS_AUTHENTICATED_FULLY')")
-     */
-    public function editAction($name)
-    {
-        // ...
-    }
-
-.. tip::
-
-    If you also had an access control in your security configuration that
-    required the user to have a ``ROLE_USER`` role in order to access any
-    of the account area, then you'd have the following situation:
-
-    * If a non-authenticated (or anonymously authenticated user) tries to
-      access the account area, the user will be asked to authenticate.
-
-    * Once the user has entered their username and password, assuming the
-      user receives the ``ROLE_USER`` role per your configuration, the user
-      will have the ``IS_AUTHENTICATED_FULLY`` role and be able to access
-      any page in the account section, including the ``editAction`` controller.
-
-    * If the user's session ends, when the user returns to the site, they will
-      be able to access every account page - except for the edit page - without
-      being forced to re-authenticate. However, when they try to access the
-      ``editAction`` controller, they will be forced to re-authenticate, since
-      they are not, yet, fully authenticated.
-
-For more information on securing services or methods in this way,
-see :doc:`/security/securing_services`.

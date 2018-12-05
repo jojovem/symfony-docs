@@ -10,10 +10,11 @@ The Debug Component
 Installation
 ------------
 
-You can install the component in many different ways:
+.. code-block:: terminal
 
-* :doc:`Install it via Composer </components/using_components>` (``symfony/debug`` on `Packagist`_);
-* Use the official Git repository (https://github.com/symfony/debug).
+    $ composer require symfony/debug
+
+Alternatively, you can clone the `<https://github.com/symfony/debug>`_ repository.
 
 .. include:: /components/require_autoload.rst.inc
 
@@ -21,7 +22,7 @@ Usage
 -----
 
 The Debug component provides several tools to help you debug PHP code.
-Enabling them all is as easy as it can get::
+Enabling them all can be done by calling the static method ``Debug::enable()``::
 
     use Symfony\Component\Debug\Debug;
 
@@ -79,7 +80,7 @@ throw more helpful exceptions when a class isn't found by the registered
 autoloaders. All autoloaders that implement a ``findFile()`` method are replaced
 with a ``DebugClassLoader`` wrapper.
 
-Using the ``DebugClassLoader`` is as easy as calling its static
+To activate the ``DebugClassLoader``, call its static
 :method:`Symfony\\Component\\Debug\\DebugClassLoader::enable` method::
 
     use Symfony\Component\Debug\DebugClassLoader;

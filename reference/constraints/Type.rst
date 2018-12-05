@@ -27,8 +27,8 @@ This will check if ``firstName`` is of type ``string`` and that ``age`` is an
 
     .. code-block:: php-annotations
 
-        // src/AppBundle/Entity/Author.php
-        namespace AppBundle\Entity;
+        // src/Entity/Author.php
+        namespace App\Entity;
 
         use Symfony\Component\Validator\Constraints as Assert;
 
@@ -50,8 +50,8 @@ This will check if ``firstName`` is of type ``string`` and that ``age`` is an
 
     .. code-block:: yaml
 
-        # src/AppBundle/Resources/config/validation.yml
-        AppBundle\Entity\Author:
+        # config/validator/validation.yaml
+        App\Entity\Author:
             properties:
                 firstName:
                     - Type: string
@@ -63,16 +63,16 @@ This will check if ``firstName`` is of type ``string`` and that ``age`` is an
 
     .. code-block:: xml
 
-        <!-- src/AppBundle/Resources/config/validation.xml -->
+        <!-- config/validator/validation.xml -->
         <?xml version="1.0" encoding="UTF-8" ?>
         <constraint-mapping xmlns="http://symfony.com/schema/dic/constraint-mapping"
             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
             xsi:schemaLocation="http://symfony.com/schema/dic/constraint-mapping http://symfony.com/schema/dic/constraint-mapping/constraint-mapping-1.0.xsd">
 
-            <class name="AppBundle\Entity\Author">
+            <class name="App\Entity\Author">
                 <property name="firstName">
                     <constraint name="Type">
-                        <type>string</type>
+                        <option name="type">string</option>
                     </constraint>
                 </property>
                 <property name="age">
@@ -86,8 +86,8 @@ This will check if ``firstName`` is of type ``string`` and that ``age`` is an
 
     .. code-block:: php
 
-        // src/AppBundle/Entity/Author.php
-        namespace AppBundle\Entity;
+        // src/Entity/Author.php
+        namespace App\Entity;
 
         use Symfony\Component\Validator\Mapping\ClassMetadata;
         use Symfony\Component\Validator\Constraints as Assert;
@@ -116,7 +116,7 @@ type
 **type**: ``string`` [:ref:`default option <validation-default-option>`]
 
 This required option is the fully qualified class name or one of the PHP
-datatypes as determined by PHP's ``is_`` functions.
+datatypes as determined by PHP's ``is_()`` functions.
 
 * :phpfunction:`array <is_array>`
 * :phpfunction:`bool <is_bool>`
@@ -125,6 +125,7 @@ datatypes as determined by PHP's ``is_`` functions.
 * :phpfunction:`double <is_double>`
 * :phpfunction:`int <is_int>`
 * :phpfunction:`integer <is_integer>`
+* :phpfunction:`iterable <is_iterable>`
 * :phpfunction:`long <is_long>`
 * :phpfunction:`null <is_null>`
 * :phpfunction:`numeric <is_numeric>`
@@ -134,7 +135,7 @@ datatypes as determined by PHP's ``is_`` functions.
 * :phpfunction:`scalar <is_scalar>`
 * :phpfunction:`string <is_string>`
 
-Also, you can use ``ctype_`` functions from corresponding
+Also, you can use ``ctype_()`` functions from corresponding
 `built-in PHP extension`_. Consider `a list of ctype functions`_:
 
 * :phpfunction:`alnum <ctype_alnum>`
@@ -159,7 +160,17 @@ message
 
 The message if the underlying data is not of the given type.
 
+You can use the following parameters in this message:
+
++-----------------+-----------------------------+
+| Parameter       | Description                 |
++=================+=============================+
+| ``{{ value }}`` | The current (invalid) value |
++-----------------+-----------------------------+
+| ``{{ type }}``  | The expected type           |
++-----------------+-----------------------------+
+
 .. include:: /reference/constraints/_payload-option.rst.inc
 
-.. _built-in PHP extension: http://php.net/book.ctype.php
-.. _a list of ctype functions: http://php.net/ref.ctype.php
+.. _built-in PHP extension: https://php.net/book.ctype.php
+.. _a list of ctype functions: https://php.net/ref.ctype.php

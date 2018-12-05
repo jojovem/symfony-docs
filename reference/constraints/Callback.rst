@@ -31,15 +31,12 @@ can do anything, including creating and assigning validation errors.
 Configuration
 -------------
 
-.. versionadded:: 3.1
-    The ``$payload`` parameter was introduced in Symfony 3.1.
-
 .. configuration-block::
 
     .. code-block:: php-annotations
 
-        // src/AppBundle/Entity/Author.php
-        namespace AppBundle\Entity;
+        // src/Entity/Author.php
+        namespace App\Entity;
 
         use Symfony\Component\Validator\Constraints as Assert;
         use Symfony\Component\Validator\Context\ExecutionContextInterface;
@@ -57,28 +54,28 @@ Configuration
 
     .. code-block:: yaml
 
-        # src/AppBundle/Resources/config/validation.yml
-        AppBundle\Entity\Author:
+        # config/validator/validation.yaml
+        App\Entity\Author:
             constraints:
-                - Callback: [validate]
+                - Callback: validate
 
     .. code-block:: xml
 
-        <!-- src/AppBundle/Resources/config/validation.xml -->
+        <!-- config/validator/validation.xml -->
         <?xml version="1.0" encoding="UTF-8" ?>
         <constraint-mapping xmlns="http://symfony.com/schema/dic/constraint-mapping"
             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
             xsi:schemaLocation="http://symfony.com/schema/dic/constraint-mapping http://symfony.com/schema/dic/constraint-mapping/constraint-mapping-1.0.xsd">
 
-            <class name="AppBundle\Entity\Author">
+            <class name="App\Entity\Author">
                 <constraint name="Callback">validate</constraint>
             </class>
         </constraint-mapping>
 
     .. code-block:: php
 
-        // src/AppBundle/Entity/Author.php
-        namespace AppBundle\Entity;
+        // src/Entity/Author.php
+        namespace App\Entity;
 
         use Symfony\Component\Validator\Mapping\ClassMetadata;
         use Symfony\Component\Validator\Constraints as Assert;
@@ -146,9 +143,9 @@ External Callbacks and Closures
 If you want to execute a static callback method that is not located in the
 class of the validated object, you can configure the constraint to invoke
 an array callable as supported by PHP's :phpfunction:`call_user_func` function.
-Suppose your validation function is ``Vendor\Package\Validator::validate()``::
+Suppose your validation function is ``Acme\Validator::validate()``::
 
-    namespace Vendor\Package;
+    namespace Acme;
 
     use Symfony\Component\Validator\Context\ExecutionContextInterface;
 
@@ -166,13 +163,13 @@ You can then use the following configuration to invoke this validator:
 
     .. code-block:: php-annotations
 
-        // src/AppBundle/Entity/Author.php
-        namespace AppBundle\Entity;
+        // src/Entity/Author.php
+        namespace App\Entity;
 
         use Symfony\Component\Validator\Constraints as Assert;
 
         /**
-         * @Assert\Callback({"Vendor\Package\Validator", "validate"})
+         * @Assert\Callback({"Acme\Validator", "validate"})
          */
         class Author
         {
@@ -180,22 +177,22 @@ You can then use the following configuration to invoke this validator:
 
     .. code-block:: yaml
 
-        # src/AppBundle/Resources/config/validation.yml
-        AppBundle\Entity\Author:
+        # config/validator/validation.yaml
+        App\Entity\Author:
             constraints:
-                - Callback: [Vendor\Package\Validator, validate]
+                - Callback: [Acme\Validator, validate]
 
     .. code-block:: xml
 
-        <!-- src/AppBundle/Resources/config/validation.xml -->
+        <!-- config/validator/validation.xml -->
         <?xml version="1.0" encoding="UTF-8" ?>
         <constraint-mapping xmlns="http://symfony.com/schema/dic/constraint-mapping"
             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
             xsi:schemaLocation="http://symfony.com/schema/dic/constraint-mapping http://symfony.com/schema/dic/constraint-mapping/constraint-mapping-1.0.xsd">
 
-            <class name="AppBundle\Entity\Author">
+            <class name="App\Entity\Author">
                 <constraint name="Callback">
-                    <value>Vendor\Package\Validator</value>
+                    <value>Acme\Validator</value>
                     <value>validate</value>
                 </constraint>
             </class>
@@ -203,9 +200,10 @@ You can then use the following configuration to invoke this validator:
 
     .. code-block:: php
 
-        // src/AppBundle/Entity/Author.php
-        namespace AppBundle\Entity;
+        // src/Entity/Author.php
+        namespace App\Entity;
 
+        use Acme\Validator;
         use Symfony\Component\Validator\Mapping\ClassMetadata;
         use Symfony\Component\Validator\Constraints as Assert;
 
@@ -214,7 +212,7 @@ You can then use the following configuration to invoke this validator:
             public static function loadValidatorMetadata(ClassMetadata $metadata)
             {
                 $metadata->addConstraint(new Assert\Callback(array(
-                    'Vendor\Package\Validator',
+                    Validator::class,
                     'validate',
                 )));
             }
@@ -231,8 +229,8 @@ You can then use the following configuration to invoke this validator:
 When configuring the constraint via PHP, you can also pass a closure to the
 constructor of the Callback constraint::
 
-    // src/AppBundle/Entity/Author.php
-    namespace AppBundle\Entity;
+    // src/Entity/Author.php
+    namespace App\Entity;
 
     use Symfony\Component\Validator\Context\ExecutionContextInterface;
 
@@ -274,7 +272,7 @@ Concrete callbacks receive an :class:`Symfony\\Component\\Validator\\Context\\Ex
 instance as only argument.
 
 Static or closure callbacks receive the validated object as the first argument
-and the :class:`Symfony\\Component\\Validator\\ExecutionContextInterface`
+and the :class:`Symfony\\Component\\Validator\\Context\\ExecutionContextInterface`
 instance as the second argument.
 
 .. include:: /reference/constraints/_payload-option.rst.inc

@@ -42,10 +42,10 @@ In this example, the validation metadata is retrieved executing the
     {
         protected $name;
 
-        public static function loadValidatorMatadata(ClassMetadata $metadata)
+        public static function loadValidatorMetadata(ClassMetadata $metadata)
         {
             $metadata->addPropertyConstraint('name', new Assert\NotBlank());
-            $metadata->addPropertyConstraint('name', new Asert\Length(array(
+            $metadata->addPropertyConstraint('name', new Assert\Length(array(
                 'min' => 5,
                 'max' => 20,
             )));
@@ -71,7 +71,7 @@ configure the locations of these files::
     use Symfony\Component\Validator\Validation;
 
     $validator = Validation::createValidatorBuilder()
-        ->addYamlMapping('config/validation.yml')
+        ->addYamlMapping('config/validation.yaml')
         ->getValidator();
 
 .. note::
@@ -100,7 +100,7 @@ prefixed classes included in doc block comments (``/** ... */``). For example::
     class User
     {
         /**
-        * @Assert\NotBlank()
+        * @Assert\NotBlank
         */
         protected $name;
     }
@@ -119,10 +119,7 @@ method. It takes an optional annotation reader instance, which defaults to
 To disable the annotation loader after it was enabled, call
 :method:`Symfony\\Component\\Validator\\ValidatorBuilder::disableAnnotationMapping`.
 
-.. note::
-
-    In order to use the annotation loader, you should have installed the
-    ``doctrine/annotations`` and ``doctrine/cache`` packages from `Packagist`_.
+.. include:: /_includes/_annotation_loader_tip.rst.inc
 
 Using Multiple Loaders
 ----------------------
@@ -148,12 +145,18 @@ Caching
 Using many loaders to load metadata from different places is convenient, but it
 can slow down your application because each file needs to be parsed, validated
 and converted into a :class:`Symfony\\Component\\Validator\\Mapping\\ClassMetadata`
-instance. To solve this problem, you can cache the ``ClassMetadata`` information.
+instance.
 
-The Validator component comes with an
-:class:`Symfony\\Component\\Validator\\Mapping\\Cache\\ApcCache`
-implementation. You can easily create other cachers by creating a class which
-implements :class:`Symfony\\Component\\Validator\\Mapping\\Cache\\CacheInterface`.
+To solve this problem, call the :method:`Symfony\\Component\\Validator\\ValidatorBuilder::setMetadataCache`
+method of the Validator builder and pass your own caching class (which must
+implement :class:`Symfony\\Component\\Validator\\Mapping\\Cache\\CacheInterface`)::
+
+    use Symfony\Component\Validator\Validation;
+
+    $validator = Validation::createValidatorBuilder()
+        // ... add loaders
+        ->setMetadataCache(new SomeImplementCacheInterface());
+        ->getValidator();
 
 .. note::
 
@@ -163,37 +166,25 @@ implements :class:`Symfony\\Component\\Validator\\Mapping\\Cache\\CacheInterface
     the Validator still needs to merge all metadata of one class from every
     loader when it is requested.
 
-Enable the cache calling the
-:method:`Symfony\\Component\\Validator\\ValidatorBuilder::setMetadataCache`
-method of the Validator builder::
-
-    use Symfony\Component\Validator\Validation;
-    use Symfony\Component\Validator\Mapping\Cache\ApcCache;
-
-    $validator = Validation::createValidatorBuilder()
-        // ... add loaders
-        ->setMetadataCache(new ApcCache('some_apc_prefix'));
-        ->getValidator();
-
 Using a Custom MetadataFactory
 ------------------------------
 
 All the loaders and the cache are passed to an instance of
-:class:`Symfony\\Component\\Validator\\Mapping\\ClassMetadataFactory`. This
-class is responsible for creating a ``ClassMetadata`` instance from all the
+:class:`Symfony\\Component\\Validator\\Mapping\\Factory\\LazyLoadingMetadataFactory`.
+This class is responsible for creating a ``ClassMetadata`` instance from all the
 configured resources.
 
 You can also use a custom metadata factory implementation by creating a class
 which implements
-:class:`Symfony\\Component\\Validator\\MetadataFactoryInterface`. You can set
-this custom implementation using
+:class:`Symfony\\Component\\Validator\\Mapping\\Factory\\MetadataFactoryInterface`.
+You can set this custom implementation using
 :method:`Symfony\\Component\\Validator\\ValidatorBuilder::setMetadataFactory`::
 
     use Acme\Validation\CustomMetadataFactory;
     use Symfony\Component\Validator\Validation;
 
     $validator = Validation::createValidatorBuilder()
-        ->setMetadataFactory(new CustomMetadataFactory(...));
+        ->setMetadataFactory(new CustomMetadataFactory(...))
         ->getValidator();
 
 .. caution::

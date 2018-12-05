@@ -22,36 +22,36 @@ Basic Usage
 
     .. code-block:: php-annotations
 
-        // src/AppBundle/Entity/User.php
-        namespace AppBundle\Entity;
+        // src/Entity/User.php
+        namespace App\Entity;
 
         use Symfony\Component\Validator\Constraints as Assert;
 
         class User
         {
             /**
-             * @Assert\Language()
+             * @Assert\Language
              */
              protected $preferredLanguage;
         }
 
     .. code-block:: yaml
 
-        # src/AppBundle/Resources/config/validation.yml
-        AppBundle\Entity\User:
+        # config/validator/validation.yaml
+        App\Entity\User:
             properties:
                 preferredLanguage:
                     - Language: ~
 
     .. code-block:: xml
 
-        <!-- src/AppBundle/Resources/config/validation.xml -->
+        <!-- config/validator/validation.xml -->
         <?xml version="1.0" encoding="UTF-8" ?>
         <constraint-mapping xmlns="http://symfony.com/schema/dic/constraint-mapping"
             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
             xsi:schemaLocation="http://symfony.com/schema/dic/constraint-mapping http://symfony.com/schema/dic/constraint-mapping/constraint-mapping-1.0.xsd">
 
-            <class name="AppBundle\Entity\User">
+            <class name="App\Entity\User">
                 <property name="preferredLanguage">
                     <constraint name="Language" />
                 </property>
@@ -60,8 +60,8 @@ Basic Usage
 
     .. code-block:: php
 
-        // src/AppBundle/Entity/User.php
-        namespace AppBundle\Entity;
+        // src/Entity/User.php
+        namespace App\Entity;
 
         use Symfony\Component\Validator\Mapping\ClassMetadata;
         use Symfony\Component\Validator\Constraints as Assert;
@@ -74,6 +74,8 @@ Basic Usage
             }
         }
 
+.. include:: /reference/constraints/_empty-values-are-valid.rst.inc
+
 Options
 -------
 
@@ -83,5 +85,13 @@ message
 **type**: ``string`` **default**: ``This value is not a valid language.``
 
 This message is shown if the string is not a valid language code.
+
+You can use the following parameters in this message:
+
++-----------------+-----------------------------+
+| Parameter       | Description                 |
++=================+=============================+
+| ``{{ value }}`` | The current (invalid) value |
++-----------------+-----------------------------+
 
 .. include:: /reference/constraints/_payload-option.rst.inc

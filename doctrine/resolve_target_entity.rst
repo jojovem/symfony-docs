@@ -21,8 +21,8 @@ without making them hard dependencies.
 Background
 ----------
 
-Suppose you have an `InvoiceBundle` which provides invoicing functionality
-and a `CustomerBundle` that contains customer management tools. You want
+Suppose you have an InvoiceBundle which provides invoicing functionality
+and a CustomerBundle that contains customer management tools. You want
 to keep these separated, because they can be used in other systems without
 each other, but for your application you want to use them together.
 
@@ -39,9 +39,9 @@ brevity) to explain how to set up and use the ``ResolveTargetEntityListener``.
 
 A Customer entity::
 
-    // src/Acme/AppBundle/Entity/Customer.php
+    // src/Entity/Customer.php
 
-    namespace Acme\AppBundle\Entity;
+    namespace App\Entity;
 
     use Doctrine\ORM\Mapping as ORM;
     use Acme\CustomerBundle\Entity\Customer as BaseCustomer;
@@ -112,39 +112,45 @@ about the replacement:
 
     .. code-block:: yaml
 
-        # app/config/config.yml
+        # config/packages/doctrine.yaml
         doctrine:
             # ...
             orm:
                 # ...
                 resolve_target_entities:
-                    Acme\InvoiceBundle\Model\InvoiceSubjectInterface: Acme\AppBundle\Entity\Customer
+                    Acme\InvoiceBundle\Model\InvoiceSubjectInterface: App\Entity\Customer
 
     .. code-block:: xml
 
-        <!-- app/config/config.xml -->
+        <!-- config/packages/doctrine.xml -->
+        <?xml version="1.0" encoding="UTF-8" ?>
         <container xmlns="http://symfony.com/schema/dic/services"
             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
             xmlns:doctrine="http://symfony.com/schema/dic/doctrine"
-            xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/schema/dic/services/services-1.0.xsd
-                                http://symfony.com/schema/dic/doctrine http://symfony.com/schema/dic/doctrine/doctrine-1.0.xsd">
+            xsi:schemaLocation="http://symfony.com/schema/dic/services
+                http://symfony.com/schema/dic/services/services-1.0.xsd
+                http://symfony.com/schema/dic/doctrine
+                http://symfony.com/schema/dic/doctrine/doctrine-1.0.xsd">
 
             <doctrine:config>
                 <doctrine:orm>
                     <!-- ... -->
-                    <doctrine:resolve-target-entity interface="Acme\InvoiceBundle\Model\InvoiceSubjectInterface">Acme\AppBundle\Entity\Customer</doctrine:resolve-target-entity>
+                    <doctrine:resolve-target-entity interface="Acme\InvoiceBundle\Model\InvoiceSubjectInterface">App\Entity\Customer</doctrine:resolve-target-entity>
                 </doctrine:orm>
             </doctrine:config>
         </container>
 
     .. code-block:: php
 
-        // app/config/config.php
+        // config/packages/doctrine.php
+        use Acme\InvoiceBundle\Model\InvoiceSubjectInterface;
+        use App\Entity\Customer;
+
         $container->loadFromExtension('doctrine', array(
             'orm' => array(
                 // ...
                 'resolve_target_entities' => array(
-                    'Acme\InvoiceBundle\Model\InvoiceSubjectInterface' => 'Acme\AppBundle\Entity\Customer',
+                    InvoiceSubjectInterface::class => Customer::class,
                 ),
             ),
         ));

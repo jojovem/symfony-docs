@@ -6,8 +6,8 @@ How to Work with Emails during Development
 
 When developing an application which sends email, you will often
 not want to actually send the email to the specified recipient during
-development. If you are using the SwiftmailerBundle with Symfony, you
-can easily achieve this through configuration settings without having to
+development. If you are using the default Symfony mailer, you
+can achieve this through configuration settings without having to
 make any changes to your application's code at all. There are two main
 choices when it comes to handling email during development: (a) disabling the
 sending of email altogether or (b) sending all email to a specific
@@ -16,28 +16,27 @@ address (with optional exceptions).
 Disabling Sending
 -----------------
 
-You can disable sending email by setting the ``disable_delivery`` option
-to ``true``. This is the default in the ``test`` environment in the Standard
-distribution. If you do this in the ``test`` specific config then email
-will not be sent when you run tests, but will continue to be sent in the
-``prod`` and ``dev`` environments:
+You can disable sending email by setting the ``disable_delivery`` option to
+``true``, which is the default value used by Symfony in the ``test`` environment
+(email messages will continue to be sent in the other environments):
 
 .. configuration-block::
 
     .. code-block:: yaml
 
-        # app/config/config_test.yml
+        # config/packages/test/swiftmailer.yaml
         swiftmailer:
-            disable_delivery:  true
+            disable_delivery: true
 
     .. code-block:: xml
 
-        <!-- app/config/config_test.xml -->
+        <!-- config/packages/test/swiftmailer.xml -->
         <?xml version="1.0" encoding="UTF-8" ?>
         <container xmlns="http://symfony.com/schema/dic/services"
             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
             xmlns:swiftmailer="http://symfony.com/schema/dic/swiftmailer"
-            xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/schema/dic/services/services-1.0.xsd
+            xsi:schemaLocation="http://symfony.com/schema/dic/services
+                http://symfony.com/schema/dic/services/services-1.0.xsd
                 http://symfony.com/schema/dic/swiftmailer http://symfony.com/schema/dic/swiftmailer/swiftmailer-1.0.xsd">
 
             <swiftmailer:config disable-delivery="true" />
@@ -45,57 +44,57 @@ will not be sent when you run tests, but will continue to be sent in the
 
     .. code-block:: php
 
-        // app/config/config_test.php
+        // config/packages/test/swiftmailer.php
         $container->loadFromExtension('swiftmailer', array(
-            'disable_delivery'  => "true",
+            'disable_delivery' => "true",
         ));
 
-If you'd also like to disable deliver in the ``dev`` environment, simply
-add this same configuration to the ``config_dev.yml`` file.
+.. _sending-to-a-specified-address:
 
-Sending to a Specified Address
-------------------------------
+Sending to a Specified Address(es)
+----------------------------------
 
-You can also choose to have all email sent to a specific address, instead
+You can also choose to have all email sent to a specific address or a list of addresses, instead
 of the address actually specified when sending the message. This can be done
-via the ``delivery_address`` option:
+via the ``delivery_addresses`` option:
 
 .. configuration-block::
 
     .. code-block:: yaml
 
-        # app/config/config_dev.yml
+        # config/packages/dev/swiftmailer.yaml
         swiftmailer:
-            delivery_address: 'dev@example.com'
+            delivery_addresses: ['dev@example.com']
 
     .. code-block:: xml
 
-        <!-- app/config/config_dev.xml -->
+        <!-- config/packages/dev/swiftmailer.xml -->
         <?xml version="1.0" encoding="UTF-8" ?>
         <container xmlns="http://symfony.com/schema/dic/services"
             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
             xmlns:swiftmailer="http://symfony.com/schema/dic/swiftmailer"
-            xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/schema/dic/services/services-1.0.xsd
-                http://symfony.com/schema/dic/swiftmailer http://symfony.com/schema/dic/swiftmailer/swiftmailer-1.0.xsd">
+            xsi:schemaLocation="http://symfony.com/schema/dic/services
+                http://symfony.com/schema/dic/services/services-1.0.xsd
+                http://symfony.com/schema/dic/swiftmailer
+                http://symfony.com/schema/dic/swiftmailer/swiftmailer-1.0.xsd">
 
-            <swiftmailer:config delivery-address="dev@example.com" />
+            <swiftmailer:config>
+                <swiftmailer:delivery-address>dev@example.com</swiftmailer:delivery-address>
+            </swiftmailer:config>
         </container>
 
     .. code-block:: php
 
-        // app/config/config_dev.php
+        // config/packages/dev/swiftmailer.php
         $container->loadFromExtension('swiftmailer', array(
-            'delivery_address'  => "dev@example.com",
+            'delivery_addresses' => array("dev@example.com"),
         ));
 
-Now, suppose you're sending an email to ``recipient@example.com``.
+Now, suppose you're sending an email to ``recipient@example.com`` in a controller::
 
-.. code-block:: php
-
-    public function indexAction($name)
+    public function index($name, \Swift_Mailer $mailer)
     {
-        $message = \Swift_Message::newInstance()
-            ->setSubject('Hello Email')
+        $message = (new \Swift_Message('Hello Email'))
             ->setFrom('send@example.com')
             ->setTo('recipient@example.com')
             ->setBody(
@@ -105,7 +104,7 @@ Now, suppose you're sending an email to ``recipient@example.com``.
                 )
             )
         ;
-        $this->get('mailer')->send($message);
+        $mailer->send($message);
 
         return $this->render(...);
     }
@@ -137,9 +136,9 @@ by adding the ``delivery_whitelist`` option:
 
     .. code-block:: yaml
 
-        # app/config/config_dev.yml
+        # config/packages/dev/swiftmailer.yaml
         swiftmailer:
-            delivery_address: dev@example.com
+            delivery_addresses: ['dev@example.com']
             delivery_whitelist:
                # all email addresses matching these regexes will be delivered
                # like normal, as well as being sent to dev@example.com
@@ -148,29 +147,30 @@ by adding the ``delivery_whitelist`` option:
 
     .. code-block:: xml
 
-        <!-- app/config/config_dev.xml -->
-
-        <?xml version="1.0" charset="UTF-8" ?>
+        <!-- config/packages/dev/swiftmailer.xml -->
         <?xml version="1.0" encoding="UTF-8" ?>
         <container xmlns="http://symfony.com/schema/dic/services"
             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
             xmlns:swiftmailer="http://symfony.com/schema/dic/swiftmailer"
-            xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/schema/dic/services/services-1.0.xsd
-                http://symfony.com/schema/dic/swiftmailer http://symfony.com/schema/dic/swiftmailer/swiftmailer-1.0.xsd">
+            xsi:schemaLocation="http://symfony.com/schema/dic/services
+                http://symfony.com/schema/dic/services/services-1.0.xsd
+                http://symfony.com/schema/dic/swiftmailer
+                http://symfony.com/schema/dic/swiftmailer/swiftmailer-1.0.xsd">
 
-            <swiftmailer:config delivery-address="dev@example.com">
+            <swiftmailer:config>
                 <!-- all email addresses matching these regexes will be delivered
                      like normal, as well as being sent to dev@example.com -->
                 <swiftmailer:delivery-whitelist-pattern>/@specialdomain\.com$/</swiftmailer:delivery-whitelist-pattern>
                 <swiftmailer:delivery-whitelist-pattern>/^admin@mydomain\.com$/</swiftmailer:delivery-whitelist-pattern>
+                <swiftmailer:delivery-address>dev@example.com</swiftmailer:delivery-address>
             </swiftmailer:config>
         </container>
 
     .. code-block:: php
 
-        // app/config/config_dev.php
+        // config/packages/dev/swiftmailer.php
         $container->loadFromExtension('swiftmailer', array(
-            'delivery_address'  => "dev@example.com",
+            'delivery_addresses' => array("dev@example.com"),
             'delivery_whitelist' => array(
                 // all email addresses matching these regexes will be delivered
                 // like normal, as well as being sent to dev@example.com
@@ -182,6 +182,10 @@ by adding the ``delivery_whitelist`` option:
 In the above example all email messages will be redirected to ``dev@example.com``
 and messages sent to the ``admin@mydomain.com`` address or to any email address
 belonging to the domain ``specialdomain.com`` will also be delivered as normal.
+
+.. caution::
+
+    The ``delivery_whitelist`` option is ignored unless the ``delivery_addresses`` option is defined.
 
 Viewing from the Web Debug Toolbar
 ----------------------------------
@@ -196,34 +200,37 @@ the web debug toolbar will not display an email icon or a report on the next
 page.
 
 Instead, you can set the ``intercept_redirects`` option to ``true`` in the
-``config_dev.yml`` file, which will cause the redirect to stop and allow
-you to open the report with details of the sent emails.
+``dev`` environment, which will cause the redirect to stop and allow you to open
+the report with details of the sent emails.
 
 .. configuration-block::
 
     .. code-block:: yaml
 
-        # app/config/config_dev.yml
+        # config/packages/dev/web_profiler.yaml
         web_profiler:
             intercept_redirects: true
 
     .. code-block:: xml
 
-        <!-- app/config/config_dev.xml -->
-
-        <!--
+        <!-- config/packages/dev/web_profiler.xml -->
+        <?xml version="1.0" encoding="UTF-8" ?>
+        <container xmlns="http://symfony.com/schema/dic/services"
+            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
             xmlns:webprofiler="http://symfony.com/schema/dic/webprofiler"
-            xsi:schemaLocation="http://symfony.com/schema/dic/webprofiler
-            http://symfony.com/schema/dic/webprofiler/webprofiler-1.0.xsd">
-        -->
+            xsi:schemaLocation="http://symfony.com/schema/dic/services
+                http://symfony.com/schema/dic/services/services-1.0.xsd
+                http://symfony.com/schema/dic/webprofiler
+                http://symfony.com/schema/dic/webprofiler/webprofiler-1.0.xsd">
 
-        <webprofiler:config
-            intercept-redirects="true"
-        />
+            <webprofiler:config
+                intercept-redirects="true"
+            />
+        </container>
 
     .. code-block:: php
 
-        // app/config/config_dev.php
+        // config/packages/dev/web_profiler.php
         $container->loadFromExtension('web_profiler', array(
             'intercept_redirects' => 'true',
         ));
@@ -234,3 +241,12 @@ you to open the report with details of the sent emails.
     by the submit URL used on the previous request (e.g. ``/contact/handle``).
     The profiler's search feature allows you to load the profiler information
     for any past requests.
+
+.. tip::
+
+    In addition to the features provided by Symfony, there are applications that
+    can help you test emails during application development, like `MailCatcher`_
+    and `MailHog`_.
+
+.. _`MailCatcher`: https://github.com/sj26/mailcatcher
+.. _`MailHog`: https://github.com/mailhog/MailHog

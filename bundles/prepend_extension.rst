@@ -2,7 +2,7 @@
    single: Configuration; Semantic
    single: Bundle; Extension configuration
 
-How to Simplify Configuration of multiple Bundles
+How to Simplify Configuration of Multiple Bundles
 =================================================
 
 When building reusable and extensible applications, developers are often
@@ -12,11 +12,10 @@ users to choose to remove functionality they are not using. Creating multiple
 bundles has the drawback that configuration becomes more tedious and settings
 often need to be repeated for various bundles.
 
-Using the below approach, it is possible to remove the disadvantage of the
-multiple bundle approach by enabling a single Extension to prepend the settings
-for any bundle. It can use the settings defined in the ``app/config/config.yml``
-to prepend settings just as if they had been written explicitly by
-the user in the application configuration.
+It is possible to remove the disadvantage of the multiple bundle approach by
+enabling a single Extension to prepend the settings for any bundle. It can use
+the settings defined in the ``config/*`` files to prepend settings just as if
+they had been written explicitly by the user in the application configuration.
 
 For example, this could be used to configure the entity manager name to use in
 multiple bundles. Or it can be used to enable an optional feature that depends
@@ -50,12 +49,13 @@ prepend settings to a bundle extension developers can use the
 :method:`Symfony\\Component\\DependencyInjection\\ContainerBuilder::prependExtensionConfig`
 method on the :class:`Symfony\\Component\\DependencyInjection\\ContainerBuilder`
 instance. As this method only prepends settings, any other settings done explicitly
-inside the ``app/config/config.yml`` would override these prepended settings.
+inside the ``config/*`` files would override these prepended settings.
 
 The following example illustrates how to prepend
 a configuration setting in multiple bundles as well as disable a flag in multiple bundles
 in case a specific other bundle is not registered::
 
+    // src/Acme/HelloBundle/DependencyInjection/AcmeHelloExtension.php
     public function prepend(ContainerBuilder $container)
     {
         // get all bundles
@@ -69,8 +69,10 @@ in case a specific other bundle is not registered::
                     case 'acme_something':
                     case 'acme_other':
                         // set use_acme_goodbye to false in the config of
-                        // acme_something and acme_other note that if the user manually
-                        // configured use_acme_goodbye to true in the app/config/config.yml
+                        // acme_something and acme_other
+                        //
+                        // note that if the user manually configured
+                        // use_acme_goodbye to true in config/services.yaml
                         // then the setting would in the end be true and not false
                         $container->prependExtensionConfig($name, $config);
                         break;
@@ -93,14 +95,15 @@ in case a specific other bundle is not registered::
     }
 
 The above would be the equivalent of writing the following into the
-``app/config/config.yml`` in case AcmeGoodbyeBundle is not registered and the
-``entity_manager_name`` setting for ``acme_hello`` is set to ``non_default``:
+``config/packages/acme_something.yaml`` in case AcmeGoodbyeBundle is not
+registered and the ``entity_manager_name`` setting for ``acme_hello`` is set to
+``non_default``:
 
 .. configuration-block::
 
     .. code-block:: yaml
 
-        # app/config/config.yml
+        # config/packages/acme_something.yaml
         acme_something:
             # ...
             use_acme_goodbye: false
@@ -112,16 +115,26 @@ The above would be the equivalent of writing the following into the
 
     .. code-block:: xml
 
-        <!-- app/config/config.xml -->
-        <acme-something:config use-acme-goodbye="false">
-            <acme-something:entity-manager-name>non_default</acme-something:entity-manager-name>
-        </acme-something:config>
+        <!-- config/packages/acme_something.xml -->
+        <?xml version="1.0" encoding="UTF-8" ?>
+        <container xmlns="http://symfony.com/schema/dic/services"
+            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+            xmlns:acme-something="http://example.org/schema/dic/acme_something"
+            xmlns:acme-other="http://example.org/schema/dic/acme_other"
+            xsi:schemaLocation="http://symfony.com/schema/dic/services
+                http://symfony.com/schema/dic/services/services-1.0.xsd">
 
-        <acme-other:config use-acme-goodbye="false" />
+            <acme-something:config use-acme-goodbye="false">
+                <acme-something:entity-manager-name>non_default</acme-something:entity-manager-name>
+            </acme-something:config>
+
+            <acme-other:config use-acme-goodbye="false" />
+
+        </container>
 
     .. code-block:: php
 
-        // app/config/config.php
+        // config/packages/acme_something.php
         $container->loadFromExtension('acme_something', array(
             // ...
             'use_acme_goodbye' => false,
@@ -131,3 +144,10 @@ The above would be the equivalent of writing the following into the
             // ...
             'use_acme_goodbye' => false,
         ));
+
+More than one Bundle using PrependExtensionInterface
+----------------------------------------------------
+
+If there is more than one bundle that prepends the same extension and defines
+the same key, the bundle that is registered **first** will take priority:
+next bundles won't override this specific config setting.

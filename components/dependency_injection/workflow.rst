@@ -4,11 +4,10 @@
 Container Building Workflow
 ===========================
 
-In the preceding pages of this section, there has been little to say about
-where the various files and classes should be located. This is because this
-depends on the application, library or framework in which you want to use
-the container. Looking at how the container is configured and built in the
-Symfony full-stack Framework will help you see how this all fits together,
+The location of the files and classes related to the Dependency Injection
+component depends on the application, library or framework in which you want
+to use the container. Looking at how the container is configured and built
+in the Symfony full-stack Framework will help you see how this all fits together,
 whether you are using the full-stack framework or looking to use the service
 container in another application.
 
@@ -35,7 +34,7 @@ for more details.
 Application-level Configuration
 -------------------------------
 
-Application level config is loaded from the ``app/config`` directory. Multiple
+Application level config is loaded from the ``config`` directory. Multiple
 files are loaded which are then merged when the extensions are processed.
 This allows for different configuration for different environments e.g.
 dev, prod.

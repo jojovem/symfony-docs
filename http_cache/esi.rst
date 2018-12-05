@@ -62,16 +62,16 @@ First, to use ESI, be sure to enable it in your application configuration:
 
     .. code-block:: yaml
 
-        # app/config/config.yml
+        # config/packages/framework.yaml
         framework:
             # ...
             esi: { enabled: true }
 
     .. code-block:: xml
 
-        <!-- app/config/config.xml -->
+        <!-- config/packages/framework.xml -->
         <?xml version="1.0" encoding="UTF-8" ?>
-        <container xmlns="http://symfony.com/schema/dic/symfony"
+        <container xmlns="http://symfony.com/schema/dic/services"
             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
             xmlns:framework="http://symfony.com/schema/dic/symfony"
             xsi:schemaLocation="http://symfony.com/schema/dic/services
@@ -87,7 +87,7 @@ First, to use ESI, be sure to enable it in your application configuration:
 
     .. code-block:: php
 
-        // app/config/config.php
+        // config/packages/framework.php
         $container->loadFromExtension('framework', array(
             // ...
             'esi' => array('enabled' => true),
@@ -95,19 +95,17 @@ First, to use ESI, be sure to enable it in your application configuration:
 
 Now, suppose you have a page that is relatively static, except for a news
 ticker at the bottom of the content. With ESI, you can cache the news ticker
-independent of the rest of the page.
+independently of the rest of the page::
 
-.. code-block:: php
-
-    // src/AppBundle/Controller/DefaultController.php
+    // src/Controller/DefaultController.php
 
     // ...
-    class DefaultController extends Controller
+    class DefaultController extends AbstractController
     {
-        public function aboutAction()
+        public function about()
         {
             $response = $this->render('static/about.html.twig');
-            // set the shared max age - which also marks the response as public
+            // sets the shared max age - which also marks the response as public
             $response->setSharedMaxAge(600);
 
             return $response;
@@ -122,41 +120,17 @@ for more details).
 As the embedded content comes from another page (or controller for that
 matter), Symfony uses the standard ``render`` helper to configure ESI tags:
 
-.. configuration-block::
+.. code-block:: twig
 
-    .. code-block:: twig
+    {# templates/static/about.html.twig #}
 
-        {# app/Resources/views/static/about.html.twig #}
+    {# you can use a controller reference #}
+    {{ render_esi(controller('App\\Controller\\NewsController::latest', { 'maxPerPage': 5 })) }}
 
-        {# you can use a controller reference #}
-        {{ render_esi(controller('AppBundle:News:latest', { 'maxPerPage': 5 })) }}
+    {# ... or a URL #}
+    {{ render_esi(url('latest_news', { 'maxPerPage': 5 })) }}
 
-        {# ... or a URL #}
-        {{ render_esi(url('latest_news', { 'maxPerPage': 5 })) }}
-
-    .. code-block:: html+php
-
-        <!-- app/Resources/views/static/about.html.php -->
-
-        <!-- you can use a controller reference -->
-        <?php echo $view['actions']->render(
-            new Symfony\Component\HttpKernel\Controller\ControllerReference(
-                'AppBundle:News:latest',
-                array('maxPerPage' => 5)
-            ),
-            array('strategy' => 'esi')
-        ) ?>
-
-        <!-- ... or a URL -->
-        <?php echo $view['actions']->render(
-            $view['router']->path(
-                'latest_news',
-                array('maxPerPage' => 5)
-            ),
-            array('strategy' => 'esi'),
-        ) ?>
-
-By using the ``esi`` renderer (via the ``render_esi`` Twig function), you
+By using the ``esi`` renderer (via the ``render_esi()`` Twig function), you
 tell Symfony that the action should be rendered as an ESI tag. You might be
 wondering why you would want to use a helper instead of just writing the ESI
 tag yourself. That's because using a helper makes your application work even
@@ -169,14 +143,14 @@ if there is no gateway cache installed.
     passed through ``render_esi`` also become part of the cache key so that
     you have unique caches for each combination of variables and values.
 
-When using the default ``render`` function (or setting the renderer to
+When using the default ``render()`` function (or setting the renderer to
 ``inline``), Symfony merges the included page content into the main one
 before sending the response to the client. But if you use the ``esi`` renderer
-(i.e. call ``render_esi``) *and* if Symfony detects that it's talking to a
+(i.e. call ``render_esi()``) *and* if Symfony detects that it's talking to a
 gateway cache that supports ESI, it generates an ESI include tag. But if there
 is no gateway cache or if it does not support ESI, Symfony will just merge
 the included page content within the main one as it would have done if you had
-used ``render``.
+used ``render()``.
 
 .. note::
 
@@ -184,18 +158,16 @@ used ``render``.
     specification that is supported out of the box by the Symfony reverse
     proxy.
 
-The embedded action can now specify its own caching rules, entirely independent
-of the master page.
+The embedded action can now specify its own caching rules entirely independently
+of the master page::
 
-.. code-block:: php
-
-    // src/AppBundle/Controller/NewsController.php
-    namespace AppBundle\Controller;
+    // src/Controller/NewsController.php
+    namespace App\Controller;
 
     // ...
-    class NewsController extends Controller
+    class NewsController extends AbstractController
     {
-        public function latestAction($maxPerPage)
+        public function latest($maxPerPage)
         {
             // ...
             $response->setSharedMaxAge(60);
@@ -220,18 +192,18 @@ that must be enabled in your configuration:
 
     .. code-block:: yaml
 
-        # app/config/config.yml
+        # config/packages/framework.yaml
         framework:
             # ...
             fragments: { path: /_fragment }
 
     .. code-block:: xml
 
-        <!-- app/config/config.xml -->
+        <!-- config/packages/framework.xml -->
         <?xml version="1.0" encoding="UTF-8" ?>
         <container xmlns="http://symfony.com/schema/dic/services"
             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-            xmlns:doctrine="http://symfony.com/schema/dic/framework"
+            xmlns:framework="http://symfony.com/schema/dic/symfony"
             xsi:schemaLocation="http://symfony.com/schema/dic/services
                 http://symfony.com/schema/dic/services/services-1.0.xsd
                 http://symfony.com/schema/dic/symfony
@@ -239,13 +211,13 @@ that must be enabled in your configuration:
 
             <!-- ... -->
             <framework:config>
-                <framework:fragments path="/_fragment" />
+                <framework:fragment path="/_fragment" />
             </framework:config>
         </container>
 
     .. code-block:: php
 
-        // app/config/config.php
+        // config/packages/framework.php
         $container->loadFromExtension('framework', array(
             // ...
             'fragments' => array('path' => '/_fragment'),

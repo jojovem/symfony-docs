@@ -17,7 +17,7 @@ pattern, the *Mediator*, to allow any kind of behaviors to be attached to our
 framework; the Symfony EventDispatcher Component implements a lightweight
 version of this pattern:
 
-.. code-block:: bash
+.. code-block:: terminal
 
     $ composer require symfony/event-dispatcher
 
@@ -70,9 +70,9 @@ the Response instance::
                 $arguments = $this->argumentResolver->getArguments($request, $controller);
 
                 $response = call_user_func_array($controller, $arguments);
-            } catch (ResourceNotFoundException $e) {
+            } catch (ResourceNotFoundException $exception) {
                 $response = new Response('Not Found', 404);
-            } catch (\Exception $e) {
+            } catch (\Exception $exception) {
                 $response = new Response('An error occurred', 500);
             }
 
@@ -139,7 +139,10 @@ the registration of a listener for the ``response`` event::
         $response->setContent($response->getContent().'GA CODE');
     });
 
-    $framework = new Simplex\Framework($dispatcher, $matcher, $resolver);
+    $controllerResolver = new ControllerResolver();
+    $argumentResolver = new ArgumentResolver();
+
+    $framework = new Simplex\Framework($dispatcher, $matcher, $controllerResolver, $argumentResolver);
     $response = $framework->handle($request);
 
     $response->send();
@@ -245,8 +248,8 @@ issue: the knowledge of the priorities is "hardcoded" in the front controller,
 instead of being in the listeners themselves. For each application, you have
 to remember to set the appropriate priorities. Moreover, the listener method
 names are also exposed here, which means that refactoring our listeners would
-mean changing all the applications that rely on those listeners. Of course,
-there is a solution: use subscribers instead of listeners::
+mean changing all the applications that rely on those listeners. The solution
+to this dilemma is to use subscribers instead of listeners::
 
     $dispatcher = new EventDispatcher();
     $dispatcher->addSubscriber(new Simplex\ContentLengthListener());

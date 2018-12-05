@@ -33,8 +33,8 @@ This method has 3 arguments:
 
     use Symfony\Component\ExpressionLanguage\ExpressionLanguage;
 
-    $language = new ExpressionLanguage();
-    $language->register('lowercase', function ($str) {
+    $expressionLanguage = new ExpressionLanguage();
+    $expressionLanguage->register('lowercase', function ($str) {
         return sprintf('(is_string(%1$s) ? strtolower(%1$s) : %1$s)', $str);
     }, function ($arguments, $str) {
         if (!is_string($str)) {
@@ -44,12 +44,12 @@ This method has 3 arguments:
         return strtolower($str);
     });
 
-    var_dump($language->evaluate('lowercase("HELLO")'));
+    var_dump($expressionLanguage->evaluate('lowercase("HELLO")'));
+    // this will print: hello
 
-This will print ``hello``. Both the **compiler** and **evaluator** are passed
-an ``arguments`` variable as their first argument, which is equal to the
-second argument to ``evaluate()`` or ``compile()`` (e.g. the "values" when
-evaluating or the "names" if compiling).
+In addition to the custom function arguments, the **evaluator** is passed an
+``arguments`` variable as its first argument, which is equal to the second
+argument of ``compile()`` (e.g. the "values" when evaluating an expression).
 
 .. _components-expression-language-provider:
 
@@ -61,13 +61,11 @@ to add custom functions. To do so, you can create a new expression provider by
 creating a class that implements
 :class:`Symfony\\Component\\ExpressionLanguage\\ExpressionFunctionProviderInterface`.
 
-This interface requires one method: 
+This interface requires one method:
 :method:`Symfony\\Component\\ExpressionLanguage\\ExpressionFunctionProviderInterface::getFunctions`,
 which returns an array of expression functions (instances of
 :class:`Symfony\\Component\\ExpressionLanguage\\ExpressionFunction`) to
-register.
-
-.. code-block:: php
+register::
 
     use Symfony\Component\ExpressionLanguage\ExpressionFunction;
     use Symfony\Component\ExpressionLanguage\ExpressionFunctionProviderInterface;
@@ -90,6 +88,18 @@ register.
         }
     }
 
+.. tip::
+
+    To create an expression function from a PHP function with the
+    :method:`Symfony\\Component\\ExpressionLanguage\\ExpressionFunction::fromPhp` static method::
+
+        ExpressionFunction::fromPhp('strtoupper');
+
+    Namespaced functions are supported, but they require a second argument to
+    define the name of the expression::
+
+        ExpressionFunction::fromPhp('My\strtoupper', 'my_strtoupper');
+
 You can register providers using
 :method:`Symfony\\Component\\ExpressionLanguage\\ExpressionLanguage::registerProvider`
 or by using the second argument of the constructor::
@@ -97,27 +107,27 @@ or by using the second argument of the constructor::
     use Symfony\Component\ExpressionLanguage\ExpressionLanguage;
 
     // using the constructor
-    $language = new ExpressionLanguage(null, array(
+    $expressionLanguage = new ExpressionLanguage(null, array(
         new StringExpressionLanguageProvider(),
         // ...
     ));
 
     // using registerProvider()
-    $language->registerProvider(new StringExpressionLanguageProvider());
+    $expressionLanguage->registerProvider(new StringExpressionLanguageProvider());
 
 .. tip::
 
     It is recommended to create your own ``ExpressionLanguage`` class in your
     library. Now you can add the extension by overriding the constructor::
 
+        use Psr\Cache\CacheItemPoolInterface;
         use Symfony\Component\ExpressionLanguage\ExpressionLanguage as BaseExpressionLanguage;
-        use Symfony\Component\ExpressionLanguage\ParserCache\ParserCacheInterface;
 
         class ExpressionLanguage extends BaseExpressionLanguage
         {
-            public function __construct(ParserCacheInterface $parser = null, array $providers = array())
+            public function __construct(CacheItemPoolInterface $parser = null, array $providers = array())
             {
-                // prepend the default provider to let users override it easily
+                // prepends the default provider to let users override it easily
                 array_unshift($providers, new StringExpressionLanguageProvider());
 
                 parent::__construct($parser, $providers);

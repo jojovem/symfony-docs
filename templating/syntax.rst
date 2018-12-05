@@ -10,10 +10,10 @@ How to Check the Syntax of Your Twig Templates
 You can check for syntax errors in Twig templates using the ``lint:twig``
 console command:
 
-.. code-block:: bash
+.. code-block:: terminal
 
     # You can check by filename:
-    $ php bin/console lint:twig app/Resources/views/article/recent_list.html.twig
+    $ php bin/console lint:twig templates/article/recent_list.html.twig
 
     # or by directory:
-    $ php bin/console lint:twig app/Resources/views
+    $ php bin/console lint:twig templates/

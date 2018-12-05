@@ -1,7 +1,7 @@
 .. index::
    single: Routing; Scheme requirement
 
-How to Force Routes to always Use HTTPS or HTTP
+How to Force Routes to Always Use HTTPS or HTTP
 ===============================================
 
 Sometimes, you want to secure some routes and be sure that they are always
@@ -10,15 +10,36 @@ the URI scheme via schemes:
 
 .. configuration-block::
 
+    .. code-block:: php-annotations
+
+        // src/Controller/MainController.php
+        namespace App\Controller;
+
+        use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+        use Symfony\Component\Routing\Annotation\Route;
+
+        class MainController extends AbstractController
+        {
+            /**
+             * @Route("/secure", name="secure", schemes={"https"})
+             */
+            public function secure()
+            {
+                // ...
+            }
+        }
+
     .. code-block:: yaml
 
+        # config/routes.yaml
         secure:
-            path:     /secure
-            defaults: { _controller: AppBundle:Main:secure }
-            schemes:  [https]
+            path:       /secure
+            controller: App\Controller\MainController::secure
+            schemes:    [https]
 
     .. code-block:: xml
 
+        <!-- config/routes.xml -->
         <?xml version="1.0" encoding="UTF-8" ?>
 
         <routes xmlns="http://symfony.com/schema/routing"
@@ -26,36 +47,38 @@ the URI scheme via schemes:
             xsi:schemaLocation="http://symfony.com/schema/routing http://symfony.com/schema/routing/routing-1.0.xsd">
 
             <route id="secure" path="/secure" schemes="https">
-                <default key="_controller">AppBundle:Main:secure</default>
+                <default key="_controller">App\Controller\MainController::secure</default>
             </route>
         </routes>
 
     .. code-block:: php
 
+        // config/routes.php
         use Symfony\Component\Routing\RouteCollection;
         use Symfony\Component\Routing\Route;
 
-        $collection = new RouteCollection();
-        $collection->add('secure', new Route('/secure', array(
-            '_controller' => 'AppBundle:Main:secure',
+        $routes = new RouteCollection();
+        $routes->add('secure', new Route('/secure', array(
+            '_controller' => 'App\Controller\MainController::secure',
         ), array(), array(), '', array('https')));
 
-        return $collection;
+        return $routes;
 
 The above configuration forces the ``secure`` route to always use HTTPS.
 
 When generating the ``secure`` URL, and if the current scheme is HTTP, Symfony
-will automatically generate an absolute URL with HTTPS as the scheme:
+will automatically generate an absolute URL with HTTPS as the scheme, even when
+using the ``path()`` function:
 
 .. code-block:: twig
 
     {# If the current scheme is HTTPS #}
     {{ path('secure') }}
-    {# generates /secure #}
+    {# generates a relative URL: /secure #}
 
     {# If the current scheme is HTTP #}
     {{ path('secure') }}
-    {# generates https://example.com/secure #}
+    {# generates an absolute URL: https://example.com/secure #}
 
 The requirement is also enforced for incoming requests. If you try to access
 the ``/secure`` path with HTTP, you will automatically be redirected to the

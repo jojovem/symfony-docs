@@ -11,17 +11,17 @@ the available blog posts for this imaginary blog application:
 
     .. code-block:: php-annotations
 
-        // src/AppBundle/Controller/BlogController.php
+        // src/Controller/BlogController.php
 
         // ...
-        class BlogController extends Controller
+        class BlogController extends AbstractController
         {
             // ...
 
             /**
              * @Route("/blog")
              */
-            public function indexAction()
+            public function index()
             {
                 // ...
             }
@@ -29,14 +29,14 @@ the available blog posts for this imaginary blog application:
 
     .. code-block:: yaml
 
-        # app/config/routing.yml
+        # config/routes.yaml
         blog:
-            path:      /blog
-            defaults:  { _controller: AppBundle:Blog:index }
+            path:       /blog
+            controller: App\Controller\BlogController::index
 
     .. code-block:: xml
 
-        <!-- app/config/routing.xml -->
+        <!-- config/routes.xml -->
         <?xml version="1.0" encoding="UTF-8" ?>
         <routes xmlns="http://symfony.com/schema/routing"
             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -44,22 +44,22 @@ the available blog posts for this imaginary blog application:
                 http://symfony.com/schema/routing/routing-1.0.xsd">
 
             <route id="blog" path="/blog">
-                <default key="_controller">AppBundle:Blog:index</default>
+                <default key="_controller">App\Controller\BlogController::index</default>
             </route>
         </routes>
 
     .. code-block:: php
 
-        // app/config/routing.php
+        // config/routes.php
         use Symfony\Component\Routing\RouteCollection;
         use Symfony\Component\Routing\Route;
 
-        $collection = new RouteCollection();
-        $collection->add('blog', new Route('/blog', array(
-            '_controller' => 'AppBundle:Blog:index',
+        $routes = new RouteCollection();
+        $routes->add('blog', new Route('/blog', array(
+            '_controller' => 'App\Controller\BlogController::index',
         )));
 
-        return $collection;
+        return $routes;
 
 So far, this route is as simple as possible - it contains no placeholders
 and will only match the exact URL ``/blog``. But what if you need this route
@@ -70,28 +70,28 @@ entries? Update the route to have a new ``{page}`` placeholder:
 
     .. code-block:: php-annotations
 
-        // src/AppBundle/Controller/BlogController.php
+        // src/Controller/BlogController.php
 
         // ...
 
         /**
          * @Route("/blog/{page}")
          */
-        public function indexAction($page)
+        public function index($page)
         {
             // ...
         }
 
     .. code-block:: yaml
 
-        # app/config/routing.yml
+        # config/routes.yaml
         blog:
-            path:      /blog/{page}
-            defaults:  { _controller: AppBundle:Blog:index }
+            path:       /blog/{page}
+            controller: App\Controller\BlogController::index
 
     .. code-block:: xml
 
-        <!-- app/config/routing.xml -->
+        <!-- config/routes.xml -->
         <?xml version="1.0" encoding="UTF-8" ?>
         <routes xmlns="http://symfony.com/schema/routing"
             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -99,22 +99,22 @@ entries? Update the route to have a new ``{page}`` placeholder:
                 http://symfony.com/schema/routing/routing-1.0.xsd">
 
             <route id="blog" path="/blog/{page}">
-                <default key="_controller">AppBundle:Blog:index</default>
+                <default key="_controller">App\Controller\BlogController::index</default>
             </route>
         </routes>
 
     .. code-block:: php
 
-        // app/config/routing.php
+        // config/routes.php
         use Symfony\Component\Routing\RouteCollection;
         use Symfony\Component\Routing\Route;
 
-        $collection = new RouteCollection();
-        $collection->add('blog', new Route('/blog/{page}', array(
-            '_controller' => 'AppBundle:Blog:index',
+        $routes = new RouteCollection();
+        $routes->add('blog', new Route('/blog/{page}', array(
+            '_controller' => 'App\Controller\BlogController::index',
         )));
 
-        return $collection;
+        return $routes;
 
 Like the ``{slug}`` placeholder before, the value matching ``{page}`` will
 be available inside your controller. Its value can be used to determine which
@@ -130,28 +130,29 @@ This is done by including it in the ``defaults`` collection:
 
     .. code-block:: php-annotations
 
-        // src/AppBundle/Controller/BlogController.php
+        // src/Controller/BlogController.php
 
         // ...
 
         /**
-         * @Route("/blog/{page}", defaults={"page" = 1})
+         * @Route("/blog/{page}", defaults={"page"=1})
          */
-        public function indexAction($page)
+        public function index($page)
         {
             // ...
         }
 
     .. code-block:: yaml
 
-        # app/config/routing.yml
+        # config/routes.yaml
         blog:
-            path:      /blog/{page}
-            defaults:  { _controller: AppBundle:Blog:index, page: 1 }
+            path:       /blog/{page}
+            controller: App\Controller\BlogController::index
+            defaults:   { page: 1 }
 
     .. code-block:: xml
 
-        <!-- app/config/routing.xml -->
+        <!-- config/routes.xml -->
         <?xml version="1.0" encoding="UTF-8" ?>
         <routes xmlns="http://symfony.com/schema/routing"
             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -159,24 +160,24 @@ This is done by including it in the ``defaults`` collection:
                 http://symfony.com/schema/routing/routing-1.0.xsd">
 
             <route id="blog" path="/blog/{page}">
-                <default key="_controller">AppBundle:Blog:index</default>
+                <default key="_controller">App\Controller\BlogController::index</default>
                 <default key="page">1</default>
             </route>
         </routes>
 
     .. code-block:: php
 
-        // app/config/routing.php
+        // config/routes.php
         use Symfony\Component\Routing\RouteCollection;
         use Symfony\Component\Routing\Route;
 
-        $collection = new RouteCollection();
-        $collection->add('blog', new Route('/blog/{page}', array(
-            '_controller' => 'AppBundle:Blog:index',
+        $routes = new RouteCollection();
+        $routes->add('blog', new Route('/blog/{page}', array(
+            '_controller' => 'App\Controller\BlogController::index',
             'page'        => 1,
         )));
 
-        return $collection;
+        return $routes;
 
 By adding ``page`` to the ``defaults`` key, the ``{page}`` placeholder is
 no longer required. The URL ``/blog`` will match this route and the value
@@ -193,7 +194,7 @@ URL          Route     Parameters
 
 .. caution::
 
-    Of course, you can have more than one optional placeholder (e.g. ``/blog/{slug}/{page}``),
+    You can have more than one optional placeholder (e.g. ``/blog/{slug}/{page}``),
     but everything after an optional placeholder must be optional. For example,
     ``/{page}/blog`` is a valid path, but ``page`` will always be required
     (i.e. simply ``/blog`` will not match this route).

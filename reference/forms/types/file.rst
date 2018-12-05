@@ -18,6 +18,8 @@ The ``FileType`` represents a file input in your form.
 | Inherited   | - `disabled`_                                                       |
 | options     | - `error_bubbling`_                                                 |
 |             | - `error_mapping`_                                                  |
+|             | - `help`_                                                           |
+|             | - `help_attr`_                                                      |
 |             | - `label`_                                                          |
 |             | - `label_attr`_                                                     |
 |             | - `label_format`_                                                   |
@@ -45,14 +47,15 @@ be used to move the ``attachment`` file to a permanent location::
 
     use Symfony\Component\HttpFoundation\File\UploadedFile;
 
-    public function uploadAction()
+    public function upload()
     {
         // ...
 
-        if ($form->isValid()) {
+        if ($form->isSubmitted() && $form->isValid()) {
             $someNewFilename = ...
 
-            $form['attachment']->getData()->move($dir, $someNewFilename);
+            $file = $form['attachment']->getData();
+            $file->move($directory, $someNewFilename);
 
             // ...
         }
@@ -64,7 +67,7 @@ The ``move()`` method takes a directory and a file name as its arguments.
 You might calculate the filename in one of the following ways::
 
     // use the original file name
-    $file->move($dir, $file->getClientOriginalName());
+    $file->move($directory, $file->getClientOriginalName());
 
     // compute a random name and try to guess the extension (more secure)
     $extension = $file->guessExtension();
@@ -72,7 +75,7 @@ You might calculate the filename in one of the following ways::
         // extension cannot be guessed
         $extension = 'bin';
     }
-    $file->move($dir, rand(1, 99999).'.'.$extension);
+    $file->move($directory, rand(1, 99999).'.'.$extension);
 
 Using the original name via ``getClientOriginalName()`` is not safe as it
 could have been manipulated by the end-user. Moreover, it can contain
@@ -122,6 +125,10 @@ These options inherit from the :doc:`FormType </reference/forms/types/form>`:
 .. include:: /reference/forms/types/options/error_bubbling.rst.inc
 
 .. include:: /reference/forms/types/options/error_mapping.rst.inc
+
+.. include:: /reference/forms/types/options/help.rst.inc
+
+.. include:: /reference/forms/types/options/help_attr.rst.inc
 
 .. include:: /reference/forms/types/options/label.rst.inc
 

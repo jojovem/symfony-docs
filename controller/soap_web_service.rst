@@ -6,9 +6,9 @@
 How to Create a SOAP Web Service in a Symfony Controller
 ========================================================
 
-Setting up a controller to act as a SOAP server is simple with a couple
-tools. You must, of course, have the `PHP SOAP`_ extension installed.
-As the PHP SOAP extension can not currently generate a WSDL, you must either
+Setting up a controller to act as a SOAP server is aided by a couple
+tools. Those tools expect you to have the `PHP SOAP`_ extension installed.
+As the PHP SOAP extension cannot currently generate a WSDL, you must either
 create one from scratch or use a 3rd party generator.
 
 .. note::
@@ -24,8 +24,8 @@ which represents the functionality that you'll expose in your SOAP service.
 In this case, the SOAP service will allow the client to call a method called
 ``hello``, which happens to send an email::
 
-    // src/Acme/SoapBundle/Services/HelloService.php
-    namespace Acme\SoapBundle\Services;
+    // src/Service/HelloService.php
+    namespace App\Service;
 
     class HelloService
     {
@@ -39,10 +39,9 @@ In this case, the SOAP service will allow the client to call a method called
         public function hello($name)
         {
 
-            $message = \Swift_Message::newInstance()
-                                    ->setTo('me@example.com')
-                                    ->setSubject('Hello Service')
-                                    ->setBody($name . ' says hi!');
+            $message = new \Swift_Message('Hello Service')
+                ->setTo('me@example.com')
+                ->setBody($name.' says hi!');
 
             $this->mailer->send($message);
 
@@ -50,60 +49,36 @@ In this case, the SOAP service will allow the client to call a method called
         }
     }
 
-Next, you can train Symfony to be able to create an instance of this class.
-Since the class sends an email, it's been designed to accept a ``Swift_Mailer``
-instance. Using the Service Container, you can configure Symfony to construct
-a ``HelloService`` object properly:
+Next, make sure that your new class is registered as a service. If you're using
+the :ref:`default services configuration <service-container-services-load-example>`,
+you don't need to do anything!
 
-.. configuration-block::
+Finally, below is an example of a controller that is capable of handling a SOAP
+request. Because ``index()`` is accessible via ``/soap``, the WSDL document
+can be retrieved via ``/soap?wsdl``::
 
-    .. code-block:: yaml
+    namespace App\Controller;
 
-        # app/config/services.yml
-        services:
-            hello_service:
-                class: Acme\SoapBundle\Services\HelloService
-                arguments: ['@mailer']
-
-    .. code-block:: xml
-
-        <!-- app/config/services.xml -->
-        <services>
-            <service id="hello_service" class="Acme\SoapBundle\Services\HelloService">
-                <argument type="service" id="mailer"/>
-            </service>
-        </services>
-
-    .. code-block:: php
-
-        // app/config/services.php
-        $container
-            ->register('hello_service', 'Acme\SoapBundle\Services\HelloService')
-            ->addArgument(new Reference('mailer'));
-
-Below is an example of a controller that is capable of handling a SOAP
-request. If ``indexAction()`` is accessible via the route ``/soap``, then the
-WSDL document can be retrieved via ``/soap?wsdl``.
-
-.. code-block:: php
-
-    namespace Acme\SoapBundle\Controller;
-
-    use Symfony\Bundle\FrameworkBundle\Controller\Controller;
+    use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
     use Symfony\Component\HttpFoundation\Response;
+    use Symfony\Component\Routing\Annotation\Route;
+    use App\Service\HelloService;
 
-    class HelloServiceController extends Controller
+    class HelloServiceController extends AbstractController
     {
-        public function indexAction()
+        /**
+         * @Route("/soap")
+         */
+        public function index(HelloService $helloService)
         {
-            $server = new \SoapServer('/path/to/hello.wsdl');
-            $server->setObject($this->get('hello_service'));
+            $soapServer = new \SoapServer('/path/to/hello.wsdl');
+            $soapServer->setObject($helloService);
 
             $response = new Response();
             $response->headers->set('Content-Type', 'text/xml; charset=ISO-8859-1');
 
             ob_start();
-            $server->handle();
+            $soapServer->handle();
             $response->setContent(ob_get_clean());
 
             return $response;
@@ -121,12 +96,12 @@ into the content of the Response and clear the output buffer. Finally, you're
 ready to return the ``Response``.
 
 Below is an example calling the service using a `NuSOAP`_ client. This example
-assumes that the ``indexAction`` in the controller above is accessible via the
-route ``/soap``::
+assumes that the ``index()`` method in the controller above is accessible via
+the route ``/soap``::
 
-    $client = new \Soapclient('http://example.com/app.php/soap?wsdl');
+    $soapClient = new \SoapClient('http://example.com/index.php/soap?wsdl');
 
-    $result = $client->call('hello', array('name' => 'Scott'));
+    $result = $soapClient->call('hello', array('name' => 'Scott'));
 
 An example WSDL is below.
 
@@ -185,12 +160,12 @@ An example WSDL is below.
 
         <service name="hellowsdl">
             <port name="hellowsdlPort" binding="tns:hellowsdlBinding">
-                <soap:address location="http://example.com/app.php/soap" />
+                <soap:address location="http://example.com/index.php/soap" />
             </port>
         </service>
     </definitions>
 
-.. _`PHP SOAP`: http://php.net/manual/en/book.soap.php
+.. _`PHP SOAP`: https://php.net/manual/en/book.soap.php
 .. _`NuSOAP`: http://sourceforge.net/projects/nusoap
-.. _`output buffering`: http://php.net/manual/en/book.outcontrol.php
+.. _`output buffering`: https://php.net/manual/en/book.outcontrol.php
 .. _`Zend SOAP`: http://framework.zend.com/manual/current/en/modules/zend.soap.server.html

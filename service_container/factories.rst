@@ -13,9 +13,9 @@ the service container to call a method on the factory rather than directly
 instantiating the class.
 
 Suppose you have a factory that configures and returns a new ``NewsletterManager``
-object::
+object by calling the static ``createNewsletterManager()`` method::
 
-    class NewsletterManagerFactory
+    class NewsletterManagerStaticFactory
     {
         public static function createNewsletterManager()
         {
@@ -29,46 +29,98 @@ object::
 
 To make the ``NewsletterManager`` object available as a service, you can
 configure the service container to use the
-``NewsletterManagerFactory::createNewsletterManager()`` factory method:
+``NewsletterManagerStaticFactory::createNewsletterManager()`` factory method:
 
 .. configuration-block::
 
     .. code-block:: yaml
 
+        # config/services.yaml
         services:
-            app.newsletter_manager:
-                class:   AppBundle\Email\NewsletterManager
-                # call a static method
-                factory: ['AppBundle\Email\NewsletterManager', create]
+            # ...
 
-            app.newsletter_manager_factory:
-                class: AppBundle\Email\NewsletterManagerFactory
-
-            app.newsletter_manager:
-                class:   AppBundle\Email\NewsletterManager
-                # call a method on the specified service
-                factory: ['@app.newsletter_manager_factory', createNewsletterManager]
+            App\Email\NewsletterManager:
+                # call the static method
+                factory: ['App\Email\NewsletterManagerStaticFactory', createNewsletterManager]
 
     .. code-block:: xml
 
+        <!-- config/services.xml -->
         <?xml version="1.0" encoding="UTF-8" ?>
         <container xmlns="http://symfony.com/schema/dic/services"
             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-            xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/schema/dic/services/services-1.0.xsd">
+            xsi:schemaLocation="http://symfony.com/schema/dic/services
+                http://symfony.com/schema/dic/services/services-1.0.xsd">
 
             <services>
-                <service id="app.newsletter_manager" class="AppBundle\Email\NewsletterManager">
-                    <!-- call a static method -->
-                    <factory class="AppBundle\Email\NewsletterManager" method="create" />
+                <service id="App\Email\NewsletterManager">
+                    <!-- call the static method -->
+                    <factory class="App\Email\NewsletterManagerStaticFactory" method="createNewsletterManager" />
+
+                    <!-- if the factory class is the same as the service class, you can omit
+                         the 'class' attribute and define just the 'method' attribute:
+
+                         <factory method="createNewsletterManager" />
+                    -->
                 </service>
+            </services>
+        </container>
 
-                <service id="app.newsletter_manager_factory"
-                    class="AppBundle\Email\NewsletterManagerFactory"
-                />
+    .. code-block:: php
 
-                <service id="app.newsletter_manager" class="AppBundle\Email\NewsletterManager">
-                    <!-- call a method on the specified service -->
-                    <factory service="app.newsletter_manager_factory"
+        // config/services.php
+        use App\Email\NewsletterManager;
+        use App\Email\NewsletterManagerStaticFactory;
+        // ...
+
+        $container->register(NewsletterManager::class)
+            // call the static method
+            ->setFactory(array(NewsletterManagerStaticFactory::class, 'createNewsletterManager'));
+
+.. note::
+
+    When using a factory to create services, the value chosen for class
+    has no effect on the resulting service. The actual class name
+    only depends on the object that is returned by the factory. However,
+    the configured class name may be used by compiler passes and therefore
+    should be set to a sensible value.
+
+If your factory is not using a static function to configure and create your
+service, but a regular method, you can instantiate the factory itself as a
+service too. Later, in the ":ref:`factories-passing-arguments-factory-method`"
+section, you learn how you can inject arguments in this method.
+
+Configuration of the service container then looks like this:
+
+.. configuration-block::
+
+    .. code-block:: yaml
+
+        # config/services.yaml
+        services:
+            # ...
+
+            App\Email\NewsletterManagerFactory: ~
+
+            App\Email\NewsletterManager:
+                # call a method on the specified factory service
+                factory: 'App\Email\NewsletterManagerFactory:createNewsletterManager'
+
+    .. code-block:: xml
+
+        <!-- config/services.xml -->
+        <?xml version="1.0" encoding="UTF-8" ?>
+        <container xmlns="http://symfony.com/schema/dic/services"
+            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+            xsi:schemaLocation="http://symfony.com/schema/dic/services
+                http://symfony.com/schema/dic/services/services-1.0.xsd">
+
+            <services>
+                <service id="App\Email\NewsletterManagerFactory" />
+
+                <service id="App\Email\NewsletterManager">
+                    <!-- call a method on the specified factory service -->
+                    <factory service="App\Email\NewsletterManagerFactory"
                         method="createNewsletterManager"
                     />
                 </service>
@@ -77,66 +129,74 @@ configure the service container to use the
 
     .. code-block:: php
 
-        use Symfony\Component\DependencyInjection\Definition;
+        // config/services.php
+        use App\Email\NewsletterManager;
+        use App\Email\NewsletterManagerFactory;
         // ...
 
-        $definition = new Definition('AppBundle\Email\NewsletterManager');
-        // call a static method
-        $definition->setFactory(array('AppBundle\Email\NewsletterManager', 'create'));
+        $container->register(NewsletterManagerFactory::class);
 
-        $container->setDefinition('app.newsletter_manager', $definition);
-
-        $container->register('app.newsletter_manager_factory', 'AppBundle\Email\NewsletterManagerFactory');
-
-        $newsletterManager = new Definition();
-
-        // call a method on the specified service
-        $newsletterManager->setFactory(array(
-            new Reference('app.newsletter_manager_factory'),
-            'createNewsletterManager'
-        ));
-
-        $container->setDefinition('app.newsletter_manager', $newsletterManager);
+        $container->register(NewsletterManager::class)
+            // call a method on the specified factory service
+            ->setFactory(array(
+                new Reference(NewsletterManagerFactory::class),
+                'createNewsletterManager',
+            ));
 
 .. note::
 
-    When using a factory to create services, the value chosen for the ``class``
-    option has no effect on the resulting service. The actual class name
-    only depends on the object that is returned by the factory. However,
-    the configured class name may be used by compiler passes and therefore
-    should be set to a sensible value.
+    The traditional configuration syntax in YAML files used an array to define
+    the factory service and the method name:
+
+    .. code-block:: yaml
+
+        # config/services.yaml
+        App\Email\NewsletterManager:
+            # new syntax
+            factory: 'App\Email\NewsletterManagerFactory:createNewsletterManager'
+            # old syntax
+            factory: ['@App\Email\NewsletterManagerFactory', createNewsletterManager]
+
+.. _factories-passing-arguments-factory-method:
 
 Passing Arguments to the Factory Method
 ---------------------------------------
 
-If you need to pass arguments to the factory method, you can use the ``arguments``
-options inside the service container. For example, suppose the ``createNewsletterManager()``
-method in the previous example takes the ``templating`` service as an argument:
+.. tip::
+
+    Arguments to your factory method are :ref:`autowired <services-autowire>` if
+    that's enabled for your service.
+
+If you need to pass arguments to the factory method you can use the ``arguments``
+options. For example, suppose the ``createNewsletterManager()`` method in the previous
+example takes the ``templating`` service as an argument:
 
 .. configuration-block::
 
     .. code-block:: yaml
 
+        # config/services.yaml
         services:
             # ...
 
-            app.newsletter_manager:
-                class:     AppBundle\Email\NewsletterManager
-                factory:   ['@newsletter_manager_factory', createNewsletterManager]
+            App\Email\NewsletterManager:
+                factory:   'App\Email\NewsletterManagerFactory:createNewsletterManager'
                 arguments: ['@templating']
 
     .. code-block:: xml
 
+        <!-- config/services.xml -->
         <?xml version="1.0" encoding="UTF-8" ?>
         <container xmlns="http://symfony.com/schema/dic/services"
             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-            xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/schema/dic/services/services-1.0.xsd">
+            xsi:schemaLocation="http://symfony.com/schema/dic/services
+                http://symfony.com/schema/dic/services/services-1.0.xsd">
 
             <services>
                 <!-- ... -->
 
-                <service id="app.newsletter_manager" class="AppBundle\Email\NewsletterManager">
-                    <factory service="app.newsletter_manager_factory" method="createNewsletterManager"/>
+                <service id="App\Email\NewsletterManager">
+                    <factory service="App\Email\NewsletterManagerFactory" method="createNewsletterManager"/>
                     <argument type="service" id="templating"/>
                 </service>
             </services>
@@ -144,15 +204,15 @@ method in the previous example takes the ``templating`` service as an argument:
 
     .. code-block:: php
 
+        // config/services.php
+        use App\Email\NewsletterManager;
+        use App\Email\NewsletterManagerFactory;
         use Symfony\Component\DependencyInjection\Reference;
-        use Symfony\Component\DependencyInjection\Definition;
 
         // ...
-        $newsletterManager = new Definition('AppBundle\Email\NewsletterManager', array(
-            new Reference('templating')
-        ));
-        $newsletterManager->setFactory(array(
-            new Reference('app.newsletter_manager_factory'),
-            'createNewsletterManager'
-        ));
-        $container->setDefinition('app.newsletter_manager', $newsletterManager);
+        $container->register(NewsletterManager::class)
+            ->addArgument(new Reference('templating'))
+            ->setFactory(array(
+                new Reference(NewsletterManagerFactory::class),
+                'createNewsletterManager',
+            ));

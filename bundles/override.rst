@@ -4,117 +4,108 @@
 How to Override any Part of a Bundle
 ====================================
 
-This document is a quick reference for how to override different parts of
-third-party bundles.
+When using a third-party bundle, you might want to customize or override some of
+its features. This document describes ways of overriding the most common
+features of a bundle.
+
+.. tip::
+
+    The bundle overriding mechanism means that you cannot use physical paths to
+    refer to bundle's resources (e.g. ``__DIR__/config/services.xml``). Always
+    use logical paths in your bundles (e.g. ``@FooBundle/Resources/config/services.xml``)
+    and call the :ref:`locateResource() method <http-kernel-resource-locator>`
+    to turn them into physical paths when needed.
+
+.. _override-templates:
 
 Templates
 ---------
 
-For information on overriding templates, see
+Third-party bundle templates can be overridden in the
+``<your-project>/templates/bundles/<bundle-name>/`` directory. The new templates
+must use the same name and path (relative to ``<bundle>/Resources/views/``) as
+the original templates.
 
-* :doc:`/templating/overriding`.
-* :doc:`/bundles/inheritance`
+For example, to override the ``Resources/views/Registration/confirmed.html.twig``
+template from the FOSUserBundle, create this template:
+``<your-project>/templates/bundles/FOSUserBundle/Registration/confirmed.html.twig``
+
+.. caution::
+
+    If you add a template in a new location, you *may* need to clear your
+    cache (``php bin/console cache:clear``), even if you are in debug mode.
+
+Instead of overriding an entire template, you may just want to override one or
+more blocks. However, since you are overriding the template you want to extend
+from, you would end up in an infinite loop error. The solution is to use the
+special ``!`` prefix in the template name to tell Symfony that you want to
+extend from the original template, not from the overridden one:
+
+.. code-block:: twig
+
+    {# templates/bundles/FOSUserBundle/Registration/confirmed.html.twig #}
+    {# the special '!' prefix avoids errors when extending from an overridden template #}
+    {% extends "@!FOSUserBundle/Registration/confirmed.html.twig" %}
+
+    {% block some_block %}
+        ...
+    {% endblock %}
+
+.. _templating-overriding-core-templates:
+
+.. tip::
+
+    Symfony internals use some bundles too, so you can apply the same technique
+    to override the core Symfony templates. For example, you can
+    :doc:`customize error pages </controller/error_pages>` overriding TwigBundle
+    templates.
 
 Routing
 -------
 
 Routing is never automatically imported in Symfony. If you want to include
 the routes from any bundle, then they must be manually imported from somewhere
-in your application (e.g. ``app/config/routing.yml``).
+in your application (e.g. ``config/routes.yaml``).
 
 The easiest way to "override" a bundle's routing is to never import it at
-all. Instead of importing a third-party bundle's routing, simply copy
+all. Instead of importing a third-party bundle's routing, copy
 that routing file into your application, modify it, and import it instead.
 
 Controllers
 -----------
 
-Assuming the third-party bundle involved uses non-service controllers (which
-is almost always the case), you can easily override controllers via bundle
-inheritance. For more information, see :doc:`/bundles/inheritance`.
 If the controller is a service, see the next section on how to override it.
+Otherwise, define a new route + controller with the same path associated to the
+controller you want to override (and make sure that the new route is loaded
+before the bundle one).
 
 Services & Configuration
 ------------------------
 
-In order to override/extend a service, there are two options. First, you can
-set the parameter holding the service's class name to your own class by setting
-it in ``app/config/config.yml``. This of course is only possible if the class name is
-defined as a parameter in the service config of the bundle containing the
-service. For example, to override the class used for Symfony's ``translator``
-service, you would override the ``translator.class`` parameter. Knowing exactly
-which parameter to override may take some research. For the translator, the
-parameter is defined and used in the ``Resources/config/translation.xml`` file
-in the core FrameworkBundle:
+If you want to modify the services created by a bundle, you can use
+:doc:`service decoration </service_container/service_decoration>`.
 
-.. configuration-block::
-
-    .. code-block:: yaml
-
-        # app/config/config.yml
-        parameters:
-            translator.class: Acme\HelloBundle\Translation\Translator
-
-    .. code-block:: xml
-
-        <!-- app/config/config.xml -->
-        <parameters>
-            <parameter key="translator.class">Acme\HelloBundle\Translation\Translator</parameter>
-        </parameters>
-
-    .. code-block:: php
-
-        // app/config/config.php
-        $container->setParameter('translator.class', 'Acme\HelloBundle\Translation\Translator');
-
-Secondly, if the class is not available as a parameter, you want to make sure the
-class is always overridden when your bundle is used or if you need to modify
-something beyond just the class name, you should use a compiler pass::
-
-    // src/Acme/DemoBundle/DependencyInjection/Compiler/OverrideServiceCompilerPass.php
-    namespace Acme\DemoBundle\DependencyInjection\Compiler;
-
-    use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;
-    use Symfony\Component\DependencyInjection\ContainerBuilder;
-
-    class OverrideServiceCompilerPass implements CompilerPassInterface
-    {
-        public function process(ContainerBuilder $container)
-        {
-            $definition = $container->getDefinition('original-service-id');
-            $definition->setClass('Acme\DemoBundle\YourService');
-        }
-    }
-
-In this example you fetch the service definition of the original service, and set
-its class name to your own class.
-
-See :doc:`/service_container/compiler_passes` for information on how to use
-compiler passes. If you want to do something beyond just overriding the class,
-like adding a method call, you can only use the compiler pass method.
+If you want to do more advanced manipulations, like removing services created by
+other bundles, you must work with :doc:`service definitions </service_container/definitions>`
+inside a :doc:`compiler pass </service_container/compiler_passes>`.
 
 Entities & Entity Mapping
 -------------------------
 
-Due to the way Doctrine works, it is not possible to override entity mapping
-of a bundle. However, if a bundle provides a mapped superclass (such as the
-``User`` entity in the FOSUserBundle) one can override attributes and
-associations. Learn more about this feature and its limitations in
-`the Doctrine documentation`_.
+If a bundle defines its entity mapping in configuration files instead of
+annotations, you can override them as any other regular bundle configuration
+file. The only caveat is that you must override all those mapping configuration
+files and not just the ones you actually want to override.
+
+If a bundle provides a mapped superclass (such as the ``User`` entity in the
+FOSUserBundle) you can override its attributes and associations. Learn more
+about this feature and its limitations in `the Doctrine documentation`_.
 
 Forms
 -----
 
-Form types are referred to by their fully-qualified class name::
-
-    $builder->add('name', CustomType::class);
-
-This means that you cannot override this by creating a sub-class of ``CustomType``
-and registering it as a service and tagging it with ``form.type`` (you *could*
-do this in earlier version).
-
-Instead, you should use a "form type extension" to modify the existing form type.
-For more information, see :doc:`/form/create_form_type_extension`.
+Existing form types can be modified defining
+:doc:`form type extensions </form/create_form_type_extension>`.
 
 .. _override-validation:
 
@@ -125,7 +116,7 @@ Symfony loads all validation configuration files from every bundle and
 combines them into one validation metadata tree. This means you are able to
 add new constraints to a property, but you cannot override them.
 
-To override this, the 3rd party bundle needs to have configuration for
+To overcome this, the 3rd party bundle needs to have configuration for
 :doc:`validation groups </validation/groups>`. For instance, the FOSUserBundle
 has this configuration. To create your own validation, add the constraints
 to a new validation group:
@@ -134,7 +125,7 @@ to a new validation group:
 
     .. code-block:: yaml
 
-        # src/Acme/UserBundle/Resources/config/validation.yml
+        # config/validator/validation.yaml
         FOS\UserBundle\Model\User:
             properties:
                 plainPassword:
@@ -147,7 +138,7 @@ to a new validation group:
 
     .. code-block:: xml
 
-        <!-- src/Acme/UserBundle/Resources/config/validation.xml -->
+        <!-- config/validator/validation.xml -->
         <?xml version="1.0" encoding="UTF-8" ?>
         <constraint-mapping xmlns="http://symfony.com/schema/dic/constraint-mapping"
             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -181,20 +172,12 @@ instead of the original ones.
 Translations
 ------------
 
-Translations are not related to bundles, but to domains. That means that you
-can override the translations from any translation file, as long as it is in
-:ref:`the correct domain <using-message-domains>`.
+Translations are not related to bundles, but to :ref:`translation domains <using-message-domains>`.
+For this reason, you can override any bundle translation file from the main
+``translations/`` directory, as long as the new file uses the same domain.
 
-.. caution::
+For example, to override the translations defined in the
+``Resources/translations/FOSUserBundle.es.yml`` file of the FOSUserBundle,
+create a``<your-project>/translations/FOSUserBundle.es.yml`` file.
 
-    The last translation file always wins. That means that you need to make
-    sure that the bundle containing *your* translations is loaded after any
-    bundle whose translations you're overriding. This is done in ``AppKernel``.
-
-    Translation files are also not aware of :doc:`bundle inheritance </bundles/inheritance>`.
-    If you want to override translations from the parent bundle, be sure that the
-    parent bundle is loaded before the child bundle in the ``AppKernel`` class.
-
-    The file that always wins is the one that is placed in
-    ``app/Resources/translations``, as those files are always loaded last.
 .. _`the Doctrine documentation`: http://docs.doctrine-project.org/projects/doctrine-orm/en/latest/reference/inheritance-mapping.html#overrides

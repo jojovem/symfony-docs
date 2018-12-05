@@ -9,10 +9,10 @@ During the execution of a Symfony application, lots of event notifications are
 triggered. Your application can listen to these notifications and respond to
 them by executing any piece of code.
 
-Internal events provided by Symfony itself are defined in the
-:class:`Symfony\\Component\\HttpKernel\\KernelEvents` class. Third-party bundles
-and libraries also trigger lots of events and your own application can trigger
-:doc:`custom events </components/event_dispatcher>`.
+Symfony triggers several :doc:`events related to the kernel </reference/events>`
+while processing the HTTP Request. Third-party bundles may also dispatch events, and
+you can even dispatch :doc:`custom events </components/event_dispatcher>` from your
+own code.
 
 All the examples shown in this article use the same ``KernelEvents::EXCEPTION``
 event for consistency purposes. In your own application, you can use any event
@@ -23,8 +23,8 @@ Creating an Event Listener
 
 The most common way to listen to an event is to register an **event listener**::
 
-    // src/AppBundle/EventListener/ExceptionListener.php
-    namespace AppBundle\EventListener;
+    // src/EventListener/ExceptionListener.php
+    namespace App\EventListener;
 
     use Symfony\Component\HttpKernel\Event\GetResponseForExceptionEvent;
     use Symfony\Component\HttpFoundation\Response;
@@ -55,7 +55,7 @@ The most common way to listen to an event is to register an **event listener**::
                 $response->setStatusCode(Response::HTTP_INTERNAL_SERVER_ERROR);
             }
 
-            // Send the modified response object to the event
+            // sends the modified response object to the event
             $event->setResponse($response);
         }
     }
@@ -64,10 +64,10 @@ The most common way to listen to an event is to register an **event listener**::
 
     Each event receives a slightly different type of ``$event`` object. For
     the ``kernel.exception`` event, it is :class:`Symfony\\Component\\HttpKernel\\Event\\GetResponseForExceptionEvent`.
-    To see what type of object each event listener receives, see :class:`Symfony\\Component\\HttpKernel\\KernelEvents`
-    or the documentation about the specific event you're listening to.
+    Check out the :doc:`Symfony events reference </reference/events>` to see
+    what type of object each event provides.
 
-Now that the class is created, you just need to register it as a service and
+Now that the class is created, you need to register it as a service and
 notify Symfony that it is a "listener" on the ``kernel.exception`` event by
 using a special "tag":
 
@@ -75,25 +75,23 @@ using a special "tag":
 
     .. code-block:: yaml
 
-        # app/config/services.yml
+        # config/services.yaml
         services:
-            app.exception_listener:
-                class: AppBundle\EventListener\ExceptionListener
+            App\EventListener\ExceptionListener:
                 tags:
                     - { name: kernel.event_listener, event: kernel.exception }
 
     .. code-block:: xml
 
-        <!-- app/config/services.xml -->
+        <!-- config/services.xml -->
         <?xml version="1.0" encoding="UTF-8" ?>
         <container xmlns="http://symfony.com/schema/dic/services"
             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-            xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/schema/dic/services/services-1.0.xsd">
+            xsi:schemaLocation="http://symfony.com/schema/dic/services
+                http://symfony.com/schema/dic/services/services-1.0.xsd">
 
             <services>
-                <service id="app.exception_listener"
-                    class="AppBundle\EventListener\ExceptionListener">
-
+                <service id="App\EventListener\ExceptionListener">
                     <tag name="kernel.event_listener" event="kernel.exception" />
                 </service>
             </services>
@@ -101,25 +99,41 @@ using a special "tag":
 
     .. code-block:: php
 
-        // app/config/services.php
+        // config/services.php
+        use App\EventListener\ExceptionListener;
+
         $container
-            ->register('app.exception_listener', 'AppBundle\EventListener\ExceptionListener')
+            ->autowire(ExceptionListener::class)
             ->addTag('kernel.event_listener', array('event' => 'kernel.exception'))
         ;
 
+Symfony follows this logic to decide which method to execute inside the event
+listener class:
+
+#. If the ``kernel.event_listener`` tag defines the ``method`` attribute, that's
+   the name of the method to be executed;
+#. If no ``method`` attribute is defined, try to execute the method whose name
+   is ``on`` + "camel-cased event name" (e.g. ``onKernelException()`` method for
+   the ``kernel.exception`` event);
+#. If that method is not defined either, try to execute the ``__invoke()`` magic
+   method (which makes event listeners invokable);
+#. If the ``_invoke()`` method is not defined either, throw an exception.
+
+.. versionadded:: 4.1
+    The support of the ``__invoke()`` method to create invokable event listeners
+    was introduced in Symfony 4.1.
+
 .. note::
 
-    There is an optional tag attribute called ``method`` which defines which method
-    to execute when the event is triggered. By default the name of the method is
-    ``on`` + "camel-cased event name". If the event is ``kernel.exception`` the
-    method executed by default is ``onKernelException()``.
+    There is an optional attribute for the ``kernel.event_listener`` tag called
+    ``priority``, which is a positive or negative integer that defaults to ``0``
+    and it controls the order in which listeners are executed (the higher the
+    number, the earlier a listener is executed). This is useful when you need to
+    guarantee that one listener is executed before another. The priorities of the
+    internal Symfony listeners usually range from ``-255`` to ``255`` but your
+    own listeners can use any positive or negative integer.
 
-    The other optional tag attribute is called  ``priority``, which defaults to
-    ``0`` and it controls the order in which listeners are executed (the highest
-    the priority, the earlier a listener is executed). This is useful when you
-    need to guarantee that one listener is executed before another. The priorities
-    of the internal Symfony listeners usually range from ``-255`` to ``255`` but
-    your own listeners can use any positive or negative integer.
+.. _events-subscriber:
 
 Creating an Event Subscriber
 ----------------------------
@@ -131,14 +145,14 @@ they are listening to.
 
 In a given subscriber, different methods can listen to the same event. The order
 in which methods are executed is defined by the ``priority`` parameter of each
-method (the higher the priority the earlier the method is called). To learn more
+method (the higher the number the earlier the method is called). To learn more
 about event subscribers, read :doc:`/components/event_dispatcher`.
 
 The following example shows an event subscriber that defines several methods which
 listen to the same ``kernel.exception`` event::
 
-    // src/AppBundle/EventSubscriber/ExceptionSubscriber.php
-    namespace AppBundle\EventSubscriber;
+    // src/EventSubscriber/ExceptionSubscriber.php
+    namespace App\EventSubscriber;
 
     use Symfony\Component\EventDispatcher\EventSubscriberInterface;
     use Symfony\Component\HttpKernel\Event\GetResponseForExceptionEvent;
@@ -174,47 +188,17 @@ listen to the same ``kernel.exception`` event::
         }
     }
 
-Now, you just need to register the class as a service and add the
-``kernel.event_subscriber`` tag to tell Symfony that this is an event subscriber:
+That's it! Your ``services.yaml`` file should already be setup to load services from
+the ``EventSubscriber`` directory. Symfony takes care of the rest.
 
-.. configuration-block::
+.. _ref-event-subscriber-configuration:
 
-    .. code-block:: yaml
+.. tip::
 
-        # app/config/services.yml
-        services:
-            app.exception_subscriber:
-                class: AppBundle\EventSubscriber\ExceptionSubscriber
-                tags:
-                    - { name: kernel.event_subscriber }
-
-    .. code-block:: xml
-
-        <!-- app/config/services.xml -->
-        <?xml version="1.0" encoding="UTF-8" ?>
-        <container xmlns="http://symfony.com/schema/dic/services"
-            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-            xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/schema/dic/services/services-1.0.xsd">
-
-            <services>
-                <service id="app.exception_subscriber"
-                    class="AppBundle\EventSubscriber\ExceptionSubscriber">
-
-                    <tag name="kernel.event_subscriber"/>
-                </service>
-            </services>
-        </container>
-
-    .. code-block:: php
-
-        // app/config/services.php
-        $container
-            ->register(
-                'app.exception_subscriber',
-                'AppBundle\EventSubscriber\ExceptionSubscriber'
-            )
-            ->addTag('kernel.event_subscriber')
-        ;
+    If your methods are *not* called when an exception is thrown, double-check that
+    you're :ref:`loading services <service-container-services-load-example>` from
+    the ``EventSubscriber`` directory and have :ref:`autoconfigure <services-autoconfigure>`
+    enabled. You can also manually add the ``kernel.event_subscriber`` tag.
 
 Request Events, Checking Types
 ------------------------------
@@ -224,8 +208,8 @@ sub-requests - typically by :doc:`/templating/embedding_controllers`). For the c
 Symfony events, you might need to check to see if the event is for a "master" request
 or a "sub request"::
 
-    // src/AppBundle/EventListener/RequestListener.php
-    namespace AppBundle\EventListener;
+    // src/EventListener/RequestListener.php
+    namespace App\EventListener;
 
     use Symfony\Component\HttpKernel\Event\GetResponseEvent;
     use Symfony\Component\HttpKernel\HttpKernel;
@@ -268,14 +252,14 @@ Debugging Event Listeners
 You can find out what listeners are registered in the event dispatcher
 using the console. To show all events and their listeners, run:
 
-.. code-block:: bash
+.. code-block:: terminal
 
     $ php bin/console debug:event-dispatcher
 
 You can get registered listeners for a particular event by specifying
 its name:
 
-.. code-block:: bash
+.. code-block:: terminal
 
     $ php bin/console debug:event-dispatcher kernel.exception
 
@@ -284,6 +268,6 @@ Learn more
 
 .. toctree::
     :maxdepth: 1
-    :glob:
 
-    event_dispatcher/*
+    event_dispatcher/before_after_filters
+    event_dispatcher/method_behavior

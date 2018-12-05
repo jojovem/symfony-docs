@@ -26,23 +26,23 @@ will contain a credit card number.
 
     .. code-block:: php-annotations
 
-        // src/AppBundle/Entity/Transaction.php
-        namespace AppBundle\Entity;
+        // src/Entity/Transaction.php
+        namespace App\Entity;
 
         use Symfony\Component\Validator\Constraints as Assert;
 
         class Transaction
         {
             /**
-             * @Assert\Luhn(message = "Please check your credit card number.")
+             * @Assert\Luhn(message="Please check your credit card number.")
              */
             protected $cardNumber;
         }
 
     .. code-block:: yaml
 
-        # src/AppBundle/Resources/config/validation.yml
-        AppBundle\Entity\Transaction:
+        # config/validator/validation.yaml
+        App\Entity\Transaction:
             properties:
                 cardNumber:
                     - Luhn:
@@ -50,13 +50,13 @@ will contain a credit card number.
 
     .. code-block:: xml
 
-        <!-- src/AppBundle/Resources/config/validation.xml -->
+        <!-- config/validator/validation.xml -->
         <?xml version="1.0" encoding="UTF-8" ?>
         <constraint-mapping xmlns="http://symfony.com/schema/dic/constraint-mapping"
             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
             xsi:schemaLocation="http://symfony.com/schema/dic/constraint-mapping http://symfony.com/schema/dic/constraint-mapping/constraint-mapping-1.0.xsd">
 
-            <class name="AppBundle\Entity\Transaction">
+            <class name="App\Entity\Transaction">
                 <property name="cardNumber">
                     <constraint name="Luhn">
                         <option name="message">Please check your credit card number.</option>
@@ -67,8 +67,8 @@ will contain a credit card number.
 
     .. code-block:: php
 
-        // src/AppBundle/Entity/Transaction.php
-        namespace AppBundle\Entity;
+        // src/Entity/Transaction.php
+        namespace App\Entity;
 
         use Symfony\Component\Validator\Mapping\ClassMetadata;
         use Symfony\Component\Validator\Constraints as Assert;
@@ -85,6 +85,8 @@ will contain a credit card number.
             }
         }
 
+.. include:: /reference/constraints/_empty-values-are-valid.rst.inc
+
 Available Options
 -----------------
 
@@ -94,6 +96,14 @@ message
 **type**: ``string`` **default**: ``Invalid card number.``
 
 The default message supplied when the value does not pass the Luhn check.
+
+You can use the following parameters in this message:
+
++-----------------+-----------------------------+
+| Parameter       | Description                 |
++=================+=============================+
+| ``{{ value }}`` | The current (invalid) value |
++-----------------+-----------------------------+
 
 .. include:: /reference/constraints/_payload-option.rst.inc
 

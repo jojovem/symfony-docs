@@ -4,9 +4,6 @@
 Extending Action Argument Resolving
 ===================================
 
-.. versionadded:: 3.1
-    The ``ArgumentResolver`` and value resolvers were introduced in Symfony 3.1.
-
 In the :doc:`controller guide </controller>`, you've learned that you can get the
 :class:`Symfony\\Component\\HttpFoundation\\Request` object via an argument in
 your controller. This argument has to be type-hinted by the ``Request`` class
@@ -18,7 +15,7 @@ functionality.
 Functionality Shipped with the HttpKernel
 -----------------------------------------
 
-Symfony ships with four value resolvers in the HttpKernel component:
+Symfony ships with five value resolvers in the HttpKernel component:
 
 :class:`Symfony\\Component\\HttpKernel\\Controller\\ArgumentResolver\\RequestAttributeValueResolver`
     Attempts to find a request attribute that matches the name of the argument.
@@ -26,6 +23,15 @@ Symfony ships with four value resolvers in the HttpKernel component:
 :class:`Symfony\\Component\\HttpKernel\\Controller\\ArgumentResolver\\RequestValueResolver`
     Injects the current ``Request`` if type-hinted with ``Request`` or a class
     extending ``Request``.
+
+:class:`Symfony\\Component\\HttpKernel\\Controller\\ArgumentResolver\\ServiceValueResolver`
+    Injects a service if type-hinted with a valid service class or interface. This
+    works like :doc:`autowiring </service_container/autowiring>`.
+
+:class:`Symfony\\Component\\HttpKernel\\Controller\\ArgumentResolver\\SessionValueResolver`
+    Injects the configured session class extending ``SessionInterface`` if
+    type-hinted with ``SessionInterface`` or a class extending
+    ``SessionInterface``.
 
 :class:`Symfony\\Component\\HttpKernel\\Controller\\ArgumentResolver\\DefaultValueResolver`
     Will set the default value of the argument if present and the argument
@@ -36,36 +42,69 @@ Symfony ships with four value resolvers in the HttpKernel component:
     argument list. When the action is called, the last (variadic) argument will
     contain all the values of this array.
 
-.. note::
-
-    Prior to Symfony 3.1, this logic was resolved within the ``ControllerResolver``.
-    The old functionality is rewritten to the aforementioned value resolvers.
-
 Adding a Custom Value Resolver
 ------------------------------
 
-Adding a new value resolver requires creating one class and one service
-definition. In the next example, you'll create a value resolver to inject the
-``User`` object from the security system. Given you write the following
-controller::
+In the next example, you'll create a value resolver to inject the object that
+represents the current user whenever a controller method type-hints an argument
+with the ``User`` class::
 
-    namespace AppBundle\Controller;
+    namespace App\Controller;
 
-    use AppBundle\Entity\User;
+    use App\Entity\User;
     use Symfony\Component\HttpFoundation\Response;
 
     class UserController
     {
-        public function indexAction(User $user)
+        public function index(User $user)
         {
             return new Response('Hello '.$user->getUsername().'!');
         }
     }
 
-Somehow you will have to get the ``User`` object and inject it into the controller.
-This can be done by implementing the
-:class:`Symfony\\Component\\HttpKernel\\Controller\\ArgumentValueResolverInterface`.
-This interface specifies that you have to implement two methods:
+Beware that this feature is already provided by the `@ParamConverter`_
+annotation from the SensioFrameworkExtraBundle. If you have that bundle
+installed in your project, add this config to disable the auto-conversion of
+type-hinted method arguments:
+
+.. configuration-block::
+
+    .. code-block:: yaml
+
+        # config/packages/sensio_framework_extra.yaml
+        sensio_framework_extra:
+            request:
+                converters: true
+                auto_convert: false
+
+    .. code-block:: xml
+
+        <!-- config/packages/sensio_framework_extra.xml -->
+        <?xml version="1.0" encoding="UTF-8" ?>
+        <container xmlns="http://symfony.com/schema/dic/services"
+            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+            xmlns:sensio-framework-extra="http://symfony.com/schema/dic/symfony_extra"
+            xsi:schemaLocation="http://symfony.com/schema/dic/services
+                http://symfony.com/schema/dic/services/services-1.0.xsd">
+
+            <sensio-framework-extra:config>
+                <request converters="true" auto-convert="false" />
+            </sensio-framework-extra:config>
+        </container>
+
+    .. code-block:: php
+
+        // config/packages/sensio_framework_extra.php
+        $container->loadFromExtension('sensio_framework_extra', array(
+            'request' => array(
+                'converters' => true,
+                'auto_convert' => false,
+            ),
+        ));
+
+Adding a new value resolver requires creating a class that implements
+:class:`Symfony\\Component\\HttpKernel\\Controller\\ArgumentValueResolverInterface`
+and defining a service for it. The interface defines two methods:
 
 ``supports()``
     This method is used to check whether the value resolver supports the
@@ -83,20 +122,22 @@ Now that you know what to do, you can implement this interface. To get the
 current ``User``, you need the current security token. This token can be
 retrieved from the token storage::
 
-    // src/AppBundle/ArgumentResolver/UserValueResolver.php
-    namespace AppBundle\ArgumentResolver;
+    // src/ArgumentResolver/UserValueResolver.php
+    namespace App\ArgumentResolver;
 
-    use AppBundle\Entity\User;
+    use App\Entity\User;
+    use Symfony\Component\HttpFoundation\Request;
     use Symfony\Component\HttpKernel\Controller\ArgumentValueResolverInterface;
-    use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
+    use Symfony\Component\HttpKernel\ControllerMetadata\ArgumentMetadata;
+    use Symfony\Component\Security\Core\Security;
 
     class UserValueResolver implements ArgumentValueResolverInterface
     {
-        private $tokenStorage;
+        private $security;
 
-        public function __construct(TokenStorageInterface $tokenStorage)
+        public function __construct(Security $security)
         {
-            $this->tokenStorage = $tokenStorage;
+            $this->security = $security;
         }
 
         public function supports(Request $request, ArgumentMetadata $argument)
@@ -105,18 +146,12 @@ retrieved from the token storage::
                 return false;
             }
 
-            $token = $this->tokenStorage->getToken();
-
-            if (!$token instanceof TokenInterface) {
-                return false;
-            }
-
-            return $token->getUser() instanceof User;
+            return $this->security->getUser() instanceof User;
         }
 
         public function resolve(Request $request, ArgumentMetadata $argument)
         {
-            yield $this->tokenStorage->getToken()->getUser();
+            yield $this->security->getUser();
         }
     }
 
@@ -124,43 +159,45 @@ In order to get the actual ``User`` object in your argument, the given value
 must fulfill the following requirements:
 
 * An argument must be type-hinted as ``User`` in your action method signature;
-* A security token must be present;
-* The value must be an instance of the ``User``.
+* The value must be an instance of the ``User`` class.
 
 When all those requirements are met and ``true`` is returned, the
 ``ArgumentResolver`` calls ``resolve()`` with the same values as it called
 ``supports()``.
 
 That's it! Now all you have to do is add the configuration for the service
-container. This can be done by tagging the service with ``controller.argument_resolver``
+container. This can be done by tagging the service with ``controller.argument_value_resolver``
 and adding a priority.
 
 .. configuration-block::
 
     .. code-block:: yaml
 
-        # app/config/services.yml
+        # config/services.yaml
         services:
-            app.value_resolver.user:
-                class: AppBundle\ArgumentResolver\UserValueResolver
-                arguments:
-                    - '@security.token_storage'
+            _defaults:
+                # ... be sure autowiring is enabled
+                autowire: true
+            # ...
+
+            App\ArgumentResolver\UserValueResolver:
                 tags:
                     - { name: controller.argument_value_resolver, priority: 50 }
 
     .. code-block:: xml
 
-        <!-- app/config/services.xml -->
+        <!-- config/services.xml -->
         <?xml version="1.0" encoding="UTF-8" ?>
         <container xmlns="http://symfony.com/schema/dic/services"
-            xmlns:xsi="'http://www.w3.org/2001/XMLSchema-Instance"
+            xmlns:xsi="http://www.w3.org/2001/XMLSchema-Instance"
             xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/schema/dic/services/services-1.0.xsd">
 
             <services>
-                <service id="app.value_resolver.user"
-                    class="AppBundle\ArgumentResolver\UserValueResolver"
-                >
-                    <argument type="service" id="security.token_storage">
+                <!-- ... be sure autowiring is enabled -->
+                <defaults autowire="true" />
+                <!-- ... -->
+
+                <service id="App\ArgumentResolver\UserValueResolver">
                     <tag name="controller.argument_value_resolver" priority="50" />
                 </service>
             </services>
@@ -169,15 +206,11 @@ and adding a priority.
 
     .. code-block:: php
 
-        // app/config/services.php
-        use Symfony\Component\DependencyInjection\Definition;
+        // config/services.php
+        use App\ArgumentResolver\UserValueResolver;
 
-        $defintion = new Definition(
-            'AppBundle\ArgumentResolver\UserValueResolver',
-            array(new Reference('security.token_storage'))
-        );
-        $definition->addTag('controller.argument_value_resolver', array('priority' => 50));
-        $container->setDefinition('app.value_resolver.user', $definition);
+        $container->autowire(UserValueResolver::class)
+            ->addTag('controller.argument_value_resolver', array('priority' => 50));
 
 While adding a priority is optional, it's recommended to add one to make sure
 the expected value is injected. The ``RequestAttributeValueResolver`` has a
@@ -198,4 +231,5 @@ subrequests.
     $user = null``). The ``DefaultValueResolver`` is executed as the last
     resolver and will use the default value if no value was already resolved.
 
+.. _`@ParamConverter`: https://symfony.com/doc/current/bundles/SensioFrameworkExtraBundle/annotations/converters.html
 .. _`yield`: http://php.net/manual/en/language.generators.syntax.php

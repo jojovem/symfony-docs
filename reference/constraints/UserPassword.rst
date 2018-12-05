@@ -24,7 +24,7 @@ password, but needs to enter their old password for security.
 Basic Usage
 -----------
 
-Suppose you have a ``PasswordChange`` class, that's used in a form where
+Suppose you have a ``ChangePassword`` class, that's used in a form where
 the user can change their password by entering their old password and a
 new password. This constraint will validate that the old password matches
 the user's current password:
@@ -33,8 +33,8 @@ the user's current password:
 
     .. code-block:: php-annotations
 
-        // src/AppBundle/Form/Model/ChangePassword.php
-        namespace AppBundle\Form\Model;
+        // src/Form/Model/ChangePassword.php
+        namespace App\Form\Model;
 
         use Symfony\Component\Security\Core\Validator\Constraints as SecurityAssert;
 
@@ -50,8 +50,8 @@ the user's current password:
 
     .. code-block:: yaml
 
-        # src/AppBundle/Resources/config/validation.yml
-        AppBundle\Form\Model\ChangePassword:
+        # config/validator/validation.yaml
+        App\Form\Model\ChangePassword:
             properties:
                 oldPassword:
                     - Symfony\Component\Security\Core\Validator\Constraints\UserPassword:
@@ -59,13 +59,13 @@ the user's current password:
 
     .. code-block:: xml
 
-        <!-- src/AppBundle/Resources/config/validation.xml -->
+        <!-- config/validator/validation.xml -->
         <?xml version="1.0" encoding="UTF-8" ?>
         <constraint-mapping xmlns="http://symfony.com/schema/dic/constraint-mapping"
             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
             xsi:schemaLocation="http://symfony.com/schema/dic/constraint-mapping http://symfony.com/schema/dic/constraint-mapping/constraint-mapping-1.0.xsd">
 
-            <class name="AppBundle\Form\Model\ChangePassword">
+            <class name="App\Form\Model\ChangePassword">
                 <property name="oldPassword">
                     <constraint
                         name="Symfony\Component\Security\Core\Validator\Constraints\UserPassword"
@@ -78,8 +78,8 @@ the user's current password:
 
     .. code-block:: php
 
-        // src/AppBundle/Form/Model/ChangePassword.php
-        namespace AppBundle\Form\Model;
+        // src/Form/Model/ChangePassword.php
+        namespace App\Form\Model;
 
         use Symfony\Component\Validator\Mapping\ClassMetadata;
         use Symfony\Component\Security\Core\Validator\Constraints as SecurityAssert;
@@ -107,5 +107,7 @@ message
 
 This is the message that's displayed when the underlying string does *not*
 match the current user's password.
+
+This message has no parameters.
 
 .. include:: /reference/constraints/_payload-option.rst.inc

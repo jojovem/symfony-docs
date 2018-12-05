@@ -5,7 +5,7 @@ Adding Custom Format Support
 ============================
 
 Sometimes, you need to deal with custom formats for translation files. The
-Translation component is flexible enough to support this. Just create a
+Translation component is flexible enough to support this. Create a
 loader (to load translations) and, optionally, a dumper (to dump translations).
 
 Imagine that you have a custom format where translation messages are defined
@@ -46,10 +46,10 @@ create the catalog that will be returned::
                 }
             }
 
-            $catalogue = new MessageCatalogue($locale);
-            $catalogue->add($messages, $domain);
+            $messageCatalogue = new MessageCatalogue($locale);
+            $messageCatalogue->add($messages, $domain);
 
-            return $catalogue;
+            return $messageCatalogue;
         }
 
     }
@@ -119,7 +119,7 @@ YAML file are dumped into a text file with the custom format::
     use Symfony\Component\Translation\Loader\YamlFileLoader;
 
     $loader = new YamlFileLoader();
-    $catalogue = $loader->load(__DIR__ . '/translations/messages.fr_FR.yml' , 'fr_FR');
+    $translations = $loader->load(__DIR__ . '/translations/messages.fr_FR.yaml' , 'fr_FR');
 
     $dumper = new MyFormatDumper();
-    $dumper->dump($catalogue, array('path' => __DIR__.'/dumps'));
+    $dumper->dump($translations, array('path' => __DIR__.'/dumps'));

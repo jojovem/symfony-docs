@@ -1,8 +1,8 @@
 Documentation Standards
 =======================
 
-In order to help the reader as much as possible and to create code examples that
-look and feel familiar, you should follow these standards.
+Contributions must follow these standards to match the style and tone of the
+rest of the Symfony documentation.
 
 Sphinx
 ------
@@ -13,8 +13,8 @@ Sphinx
 * Each line should break approximately after the first word that crosses the
   72nd character (so most lines end up being 72-78 characters);
 * The ``::`` shorthand is *preferred* over ``.. code-block:: php`` to begin a PHP
-  code block (read `the Sphinx documentation`_ to see when you should use the
-  shorthand);
+  code block unless it results in the marker being on its own line (read
+  `the Sphinx documentation`_ to see when you should use the shorthand);
 * Inline hyperlinks are **not** used. Separate the link and their target
   definition, which you add on the bottom of the page;
 * Inline markup should be closed on the same line as the open-string;
@@ -54,8 +54,6 @@ Code Examples
 * The code examples should look real for a web application context. Avoid abstract
   or trivial examples (``foo``, ``bar``, ``demo``, etc.);
 * The code should follow the :doc:`Symfony Best Practices </best_practices/introduction>`.
-  Unless the example requires a custom bundle, make sure to always use the
-  ``AppBundle`` bundle to store your code;
 * Use ``Acme`` when the code requires a vendor name;
 * Use ``example.com`` as the domain of sample URLs and ``example.org`` and
   ``example.net`` when additional domains are required. All of these domains are
@@ -132,7 +130,7 @@ Files and Directories
 ---------------------
 
 * When referencing directories, always add a trailing slash to avoid confusions
-  with regular files (e.g. "execute the ``console`` script located at the ``app/``
+  with regular files (e.g. "execute the ``console`` script located at the ``bin/``
   directory").
 * When referencing file extensions explicitly, you should include a leading dot
   for every extension (e.g. "XML files use the ``.xml`` extension").
@@ -176,10 +174,10 @@ In addition, documentation follows these rules:
   * himself or herself, use themselves
 
 .. _`the Sphinx documentation`: http://sphinx-doc.org/rest.html#source-code
-.. _`Twig Coding Standards`: http://twig.sensiolabs.org/doc/coding_standards.html
+.. _`Twig Coding Standards`: https://twig.symfony.com/doc/2.x/coding_standards.html
 .. _`reserved by the IANA`: http://tools.ietf.org/html/rfc2606#section-3
 .. _`American English`: https://en.wikipedia.org/wiki/American_English
-.. _`American English Oxford Dictionary`: http://www.oxforddictionaries.com/definition/american_english/
+.. _`American English Oxford Dictionary`: http://en.oxforddictionaries.com/definition/american_english/
 .. _`headings and titles`: https://en.wikipedia.org/wiki/Letter_case#Headings_and_publication_titles
 .. _`Serial (Oxford) Commas`: https://en.wikipedia.org/wiki/Serial_comma
 .. _`nosism`: https://en.wikipedia.org/wiki/Nosism

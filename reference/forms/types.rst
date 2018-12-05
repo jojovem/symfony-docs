@@ -19,6 +19,8 @@ Form Types Reference
    types/search
    types/url
    types/range
+   types/tel
+   types/color
 
    types/choice
    types/entity
@@ -29,6 +31,7 @@ Form Types Reference
    types/currency
 
    types/date
+   types/dateinterval
    types/datetime
    types/time
    types/birthday

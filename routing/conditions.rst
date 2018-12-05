@@ -1,24 +1,54 @@
 .. index::
-    :single: Routing; Conditions
+    single: Routing; Conditions
 
 How to Restrict Route Matching through Conditions
 =================================================
 
-As you've seen, a route can be made to match only certain routing wildcards
-(via regular expressions), HTTP methods, or host names. But the routing system
-can be extended to have an almost infinite flexibility using ``conditions``:
+A route can be made to match only certain routing placeholders (via regular
+expressions), HTTP methods, or host names. If you need more flexibility to
+define arbitrary matching logic, use the ``conditions`` routing option:
 
 .. configuration-block::
 
+    .. code-block:: php-annotations
+
+        // src/Controller/DefaultController.php
+        namespace App\Controller;
+
+        use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+        use Symfony\Component\Routing\Annotation\Route;
+
+        class DefaultController extends AbstractController
+        {
+            /**
+             * @Route(
+             *     "/contact",
+             *     name="contact",
+             *     condition="context.getMethod() in ['GET', 'HEAD'] and request.headers.get('User-Agent') matches '/firefox/i'"
+             * )
+             *
+             * expressions can also include config parameters 
+             * condition: "request.headers.get('User-Agent') matches '%app.allowed_browsers%'"
+             */
+            public function contact()
+            {
+                // ...
+            }
+        }
+
     .. code-block:: yaml
 
+        # config/routes.yaml
         contact:
-            path:     /contact
-            defaults: { _controller: AcmeDemoBundle:Main:contact }
-            condition: "context.getMethod() in ['GET', 'HEAD'] and request.headers.get('User-Agent') matches '/firefox/i'"
+            path:       /contact
+            controller: 'App\Controller\DefaultController::contact'
+            condition:  "context.getMethod() in ['GET', 'HEAD'] and request.headers.get('User-Agent') matches '/firefox/i'"
+            # expressions can also include config parameters 
+            # condition: "request.headers.get('User-Agent') matches '%app.allowed_browsers%'"
 
     .. code-block:: xml
 
+        <!-- config/routes.xml -->
         <?xml version="1.0" encoding="UTF-8" ?>
         <routes xmlns="http://symfony.com/schema/routing"
             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -26,20 +56,23 @@ can be extended to have an almost infinite flexibility using ``conditions``:
                 http://symfony.com/schema/routing/routing-1.0.xsd">
 
             <route id="contact" path="/contact">
-                <default key="_controller">AcmeDemoBundle:Main:contact</default>
+                <default key="_controller">App\Controller\DefaultController::contact</default>
                 <condition>context.getMethod() in ['GET', 'HEAD'] and request.headers.get('User-Agent') matches '/firefox/i'</condition>
+                <!-- expressions can also include config parameters -->
+                <!-- <condition>request.headers.get('User-Agent') matches '%app.allowed_browsers%'</condition> -->
             </route>
         </routes>
 
     .. code-block:: php
 
+        // config/routes.php
         use Symfony\Component\Routing\RouteCollection;
         use Symfony\Component\Routing\Route;
 
-        $collection = new RouteCollection();
-        $collection->add('contact', new Route(
+        $routes = new RouteCollection();
+        $routes->add('contact', new Route(
             '/contact', array(
-                '_controller' => 'AcmeDemoBundle:Main:contact',
+                '_controller' => 'App\Controller\DefaultController::contact',
             ),
             array(),
             array(),
@@ -47,6 +80,8 @@ can be extended to have an almost infinite flexibility using ``conditions``:
             array(),
             array(),
             'context.getMethod() in ["GET", "HEAD"] and request.headers.get("User-Agent") matches "/firefox/i"'
+            // expressions can also include config parameters
+            // 'request.headers.get("User-Agent") matches "%app.allowed_browsers%"'
         ));
 
         return $collection;
@@ -75,7 +110,7 @@ variables that are passed into the expression:
     Behind the scenes, expressions are compiled down to raw PHP. Our example
     would generate the following PHP in the cache directory::
 
-        if (rtrim($pathinfo, '/contact') === '' && (
+        if (rtrim($pathInfo, '/contact') === '' && (
             in_array($context->getMethod(), array(0 => "GET", 1 => "HEAD"))
             && preg_match("/firefox/i", $request->headers->get("User-Agent"))
         )) {

@@ -14,10 +14,10 @@ it is broken down.
 
     .. code-block:: yaml
 
-        # app/config/config_prod.yml
+        # config/packages/prod/monolog.yaml
         monolog:
             handlers:
-                mail:
+                main:
                     type:         fingers_crossed
                     # 500 errors are logged at the critical level
                     action_level: critical
@@ -42,16 +42,17 @@ it is broken down.
 
     .. code-block:: xml
 
-        <!-- app/config/config_prod.xml -->
+        <!-- config/packages/prod/monolog.xml -->
         <?xml version="1.0" encoding="UTF-8" ?>
         <container xmlns="http://symfony.com/schema/dic/services"
             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
             xmlns:monolog="http://symfony.com/schema/dic/monolog"
-            xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/schema/dic/services/services-1.0.xsd
-                                http://symfony.com/schema/dic/monolog http://symfony.com/schema/dic/monolog/monolog-1.0.xsd">
+            xsi:schemaLocation="http://symfony.com/schema/dic/services
+                http://symfony.com/schema/dic/services/services-1.0.xsd
+                http://symfony.com/schema/dic/monolog http://symfony.com/schema/dic/monolog/monolog-1.0.xsd">
 
             <monolog:config>
-                <!-- 
+                <!--
                 500 errors are logged at the critical level,
                 to also log 400 level errors (but not 404's):
                 action-level="error"
@@ -59,7 +60,7 @@ it is broken down.
                 <monolog:excluded-404>^/</monolog:excluded-404>
                 -->
                 <monolog:handler
-                    name="mail"
+                    name="main"
                     type="fingers_crossed"
                     action-level="critical"
                     handler="deduplicated"
@@ -68,7 +69,7 @@ it is broken down.
                     name="deduplicated"
                     type="deduplication"
                     handler="swift"
-                >
+                />
                 <monolog:handler
                     name="swift"
                     type="swift_mailer"
@@ -92,10 +93,10 @@ it is broken down.
 
     .. code-block:: php
 
-        // app/config/config_prod.php
+        // config/packages/prod/monolog.php
         $container->loadFromExtension('monolog', array(
             'handlers' => array(
-                'mail' => array(
+                'main' => array(
                     'type'         => 'fingers_crossed',
                     // 500 errors are logged at the critical level
                     'action_level' => 'critical',
@@ -124,7 +125,7 @@ it is broken down.
             ),
         ));
 
-The ``mail`` handler is a ``fingers_crossed`` handler which means that
+The ``main`` handler is a ``fingers_crossed`` handler which means that
 it is only triggered when the action level, in this case ``critical`` is reached.
 The ``critical`` level is only triggered for 5xx HTTP code errors. If this level
 is reached once, the ``fingers_crossed`` handler will log all messages
@@ -137,15 +138,53 @@ is then passed onto the ``deduplicated`` handler.
     set the ``action_level`` to ``error`` instead of ``critical``. See the
     code above for an example.
 
-The ``deduplicated`` handler simply keeps all the messages for a request and
+The ``deduplicated`` handler keeps all the messages for a request and
 then passes them onto the nested handler in one go, but only if the records are
 unique over a given period of time (60 seconds by default). If the records are
-duplicates they are simply discarded. Adding this handler reduces the amount of
+duplicates they are discarded. Adding this handler reduces the amount of
 notifications to a manageable level, specially in critical failure scenarios.
+You can adjust the time period using the ``time`` option:
+
+.. configuration-block::
+
+    .. code-block:: yaml
+
+        # config/packages/prod/monolog.yaml
+        monolog:
+            handlers:
+                # ...
+                deduplicated:
+                    type: deduplication
+                    # the time in seconds during which duplicate entries are discarded (default: 60)
+                    time: 10
+                    handler: swift
+
+    .. code-block:: xml
+
+        <!-- config/packages/prod/monolog.xml -->
+
+        <!-- time: the time in seconds during which duplicate entries are discarded (default: 60) -->
+        <monolog:handler name="deduplicated"
+            type="deduplication"
+            time="10"
+            handler="swift" />
+
+    .. code-block:: php
+
+        // config/packages/prod/monolog.php
+        $container->loadFromExtension('monolog', array(
+            'handlers' => array(
+                // ...
+                'deduplicated' => array(
+                    'type'    => 'deduplication',
+                    // the time in seconds during which duplicate entries are discarded (default: 60)
+                    'time' => 10,
+                    'handler' => 'swift',
+                 )
 
 The messages are then passed to the ``swift`` handler. This is the handler that
 actually deals with emailing you the error. The settings for this are
-straightforward, the to and from addresses, the formatter, the content type 
+straightforward, the to and from addresses, the formatter, the content type
 and the subject.
 
 You can combine these handlers with other handlers so that the errors still
@@ -155,7 +194,7 @@ get logged on the server as well as the emails being sent:
 
     .. code-block:: yaml
 
-        # app/config/config_prod.yml
+        # config/packages/prod/monolog.yaml
         monolog:
             handlers:
                 main:
@@ -183,12 +222,13 @@ get logged on the server as well as the emails being sent:
 
     .. code-block:: xml
 
-        <!-- app/config/config_prod.xml -->
+        <!-- config/packages/prod/monolog.xml -->
         <container xmlns="http://symfony.com/schema/dic/services"
             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
             xmlns:monolog="http://symfony.com/schema/dic/monolog"
-            xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/schema/dic/services/services-1.0.xsd
-                                http://symfony.com/schema/dic/monolog http://symfony.com/schema/dic/monolog/monolog-1.0.xsd">
+            xsi:schemaLocation="http://symfony.com/schema/dic/services
+                http://symfony.com/schema/dic/services/services-1.0.xsd
+                http://symfony.com/schema/dic/monolog http://symfony.com/schema/dic/monolog/monolog-1.0.xsd">
 
             <monolog:config>
                 <monolog:handler
@@ -237,7 +277,7 @@ get logged on the server as well as the emails being sent:
 
     .. code-block:: php
 
-        // app/config/config_prod.php
+        // config/packages/prod/monolog.php
         $container->loadFromExtension('monolog', array(
             'handlers' => array(
                 'main' => array(

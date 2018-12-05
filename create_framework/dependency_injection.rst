@@ -10,9 +10,10 @@ to it::
     namespace Simplex;
 
     use Symfony\Component\EventDispatcher\EventDispatcher;
-    use Symfony\Component\Routing;
     use Symfony\Component\HttpFoundation;
+    use Symfony\Component\HttpFoundation\RequestStack;
     use Symfony\Component\HttpKernel;
+    use Symfony\Component\Routing;
 
     class Framework extends HttpKernel\HttpKernel
     {
@@ -20,15 +21,16 @@ to it::
         {
             $context = new Routing\RequestContext();
             $matcher = new Routing\Matcher\UrlMatcher($routes, $context);
+            $requestStack = new RequestStack();
 
             $controllerResolver = new HttpKernel\Controller\ControllerResolver();
             $argumentResolver = new HttpKernel\Controller\ArgumentResolver();
 
             $dispatcher = new EventDispatcher();
-            $dispatcher->addSubscriber(new HttpKernel\EventListener\RouterListener($matcher));
+            $dispatcher->addSubscriber(new HttpKernel\EventListener\RouterListener($matcher, $requestStack));
             $dispatcher->addSubscriber(new HttpKernel\EventListener\ResponseListener('UTF-8'));
 
-            parent::__construct($dispatcher, $controllerResolver, new RequestStack(), $argumentResolver);
+            parent::__construct($dispatcher, $controllerResolver, $requestStack, $argumentResolver);
         }
     }
 
@@ -88,7 +90,7 @@ front controller? As you might expect, there is a solution. We can solve all
 these issues and some more by using the Symfony dependency injection
 container:
 
-.. code-block:: bash
+.. code-block:: terminal
 
     $ composer require symfony/dependency-injection
 
@@ -97,31 +99,36 @@ Create a new file to host the dependency injection container configuration::
     // example.com/src/container.php
     use Symfony\Component\DependencyInjection;
     use Symfony\Component\DependencyInjection\Reference;
+    use Symfony\Component\HttpFoundation;
+    use Symfony\Component\HttpKernel;
+    use Symfony\Component\Routing;
+    use Symfony\Component\EventDispatcher;
+    use Simplex\Framework;
 
-    $sc = new DependencyInjection\ContainerBuilder();
-    $sc->register('context', 'Symfony\Component\Routing\RequestContext');
-    $sc->register('matcher', 'Symfony\Component\Routing\Matcher\UrlMatcher')
+    $containerBuilder = new DependencyInjection\ContainerBuilder();
+    $containerBuilder->register('context', Routing\RequestContext::class);
+    $containerBuilder->register('matcher', Routing\Matcher\UrlMatcher::class)
         ->setArguments(array($routes, new Reference('context')))
     ;
-    $sc->register('request_stack', 'Symfony\Component\HttpFoundation\RequestStack');
-    $sc->register('controller_resolver', 'Symfony\Component\HttpKernel\Controller\ControllerResolver');
-    $sc->register('argument_resolver', 'Symfony\Component\HttpKernel\Controller\ArgumentResolver');
+    $containerBuilder->register('request_stack', HttpFoundation\RequestStack::class);
+    $containerBuilder->register('controller_resolver', HttpKernel\Controller\ControllerResolver::class);
+    $containerBuilder->register('argument_resolver', HttpKernel\Controller\ArgumentResolver::class);
 
-    $sc->register('listener.router', 'Symfony\Component\HttpKernel\EventListener\RouterListener')
+    $containerBuilder->register('listener.router', HttpKernel\EventListener\RouterListener::class)
         ->setArguments(array(new Reference('matcher'), new Reference('request_stack')))
     ;
-    $sc->register('listener.response', 'Symfony\Component\HttpKernel\EventListener\ResponseListener')
+    $containerBuilder->register('listener.response', HttpKernel\EventListener\ResponseListener::class)
         ->setArguments(array('UTF-8'))
     ;
-    $sc->register('listener.exception', 'Symfony\Component\HttpKernel\EventListener\ExceptionListener')
-        ->setArguments(array('Calendar\\Controller\\ErrorController::exceptionAction'))
+    $containerBuilder->register('listener.exception', HttpKernel\EventListener\ExceptionListener::class)
+        ->setArguments(array('Calendar\Controller\ErrorController::exception'))
     ;
-    $sc->register('dispatcher', 'Symfony\Component\EventDispatcher\EventDispatcher')
+    $containerBuilder->register('dispatcher', EventDispatcher\EventDispatcher::class)
         ->addMethodCall('addSubscriber', array(new Reference('listener.router')))
         ->addMethodCall('addSubscriber', array(new Reference('listener.response')))
         ->addMethodCall('addSubscriber', array(new Reference('listener.exception')))
     ;
-    $sc->register('framework', 'Simplex\Framework')
+    $containerBuilder->register('framework', Framework::class)
         ->setArguments(array(
             new Reference('dispatcher'),
             new Reference('controller_resolver'),
@@ -130,7 +137,7 @@ Create a new file to host the dependency injection container configuration::
         ))
     ;
 
-    return $sc;
+    return $containerBuilder;
 
 The goal of this file is to configure your objects and their dependencies.
 Nothing is instantiated during this configuration step. This is purely a
@@ -159,11 +166,11 @@ The front controller is now only about wiring everything together::
     use Symfony\Component\HttpFoundation\Request;
 
     $routes = include __DIR__.'/../src/app.php';
-    $sc = include __DIR__.'/../src/container.php';
+    $container = include __DIR__.'/../src/container.php';
 
     $request = Request::createFromGlobals();
 
-    $response = $sc->get('framework')->handle($request);
+    $response = $container->get('framework')->handle($request);
 
     $response->send();
 
@@ -186,8 +193,11 @@ framework code should be the previous simple version::
 
 Now, here is how you can register a custom listener in the front controller::
 
-    $sc->register('listener.string_response', 'Simplex\StringResponseListener');
-    $sc->getDefinition('dispatcher')
+    // ...
+    use Simplex\StringResponseListener;
+
+    $container->register('listener.string_response', StringResponseListener::class);
+    $container->getDefinition('dispatcher')
         ->addMethodCall('addSubscriber', array(new Reference('listener.string_response')))
     ;
 
@@ -195,32 +205,34 @@ Beside describing your objects, the dependency injection container can also be
 configured via parameters. Let's create one that defines if we are in debug
 mode or not::
 
-    $sc->setParameter('debug', true);
+    $container->setParameter('debug', true);
 
-    echo $sc->getParameter('debug');
+    echo $container->getParameter('debug');
 
 These parameters can be used when defining object definitions. Let's make the
 charset configurable::
 
-    $sc->register('listener.response', 'Symfony\Component\HttpKernel\EventListener\ResponseListener')
+    // ...
+    $container->register('listener.response', HttpKernel\EventListener\ResponseListener::class)
         ->setArguments(array('%charset%'))
     ;
 
 After this change, you must set the charset before using the response listener
 object::
 
-    $sc->setParameter('charset', 'UTF-8');
+    $container->setParameter('charset', 'UTF-8');
 
 Instead of relying on the convention that the routes are defined by the
 ``$routes`` variables, let's use a parameter again::
 
-    $sc->register('matcher', 'Symfony\Component\Routing\Matcher\UrlMatcher')
+    // ...
+    $container->register('matcher', Routing\Matcher\UrlMatcher::class)
         ->setArguments(array('%routes%', new Reference('context')))
     ;
 
 And the related change in the front controller::
 
-    $sc->setParameter('routes', include __DIR__.'/../src/app.php');
+    $container->setParameter('routes', include __DIR__.'/../src/app.php');
 
 We have obviously barely scratched the surface of what you can do with the
 container: from class names as parameters, to overriding existing object
@@ -238,11 +250,7 @@ in great details, but hopefully it gives you enough information to get started
 on your own and to better understand how the Symfony framework works
 internally.
 
-If you want to learn more, read the source code of the `Silex`_
-micro-framework, and especially its `Application`_ class.
-
 Have fun!
 
 .. _`Pimple`: https://github.com/silexphp/Pimple
-.. _`Silex`: http://silex.sensiolabs.org/
 .. _`Application`: https://github.com/silexphp/Silex/blob/master/src/Silex/Application.php

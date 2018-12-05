@@ -48,19 +48,22 @@ configuration:
 
     # ...
     sites:
-        - map: symfony-demo.dev
-          to: /home/vagrant/projects/symfony_demo/web
-          type: symfony
+        - map: symfony-demo.test
+          to: /home/vagrant/projects/symfony_demo/public
+          type: symfony4
 
 The ``type`` option tells Homestead to use the Symfony nginx configuration.
+Homestead now supports a Symfony 2 and 3 web layout with ``app.php`` and
+``app_dev.php`` when using type ``symfony2`` and an ``index.php`` layout when
+using type ``symfony4``.
 
-At last, edit the hosts file on your local machine to map ``symfony-demo.dev``
+At last, edit the hosts file on your local machine to map ``symfony-demo.test``
 to ``192.168.10.10`` (which is the IP used by Homestead)::
 
     # /etc/hosts (unix) or C:\Windows\System32\drivers\etc\hosts (Windows)
-    192.168.10.10 symfony-demo.dev
+    192.168.10.10 symfony-demo.test
 
-Now, navigate to ``http://symfony-demo.dev`` in your web browser and enjoy
+Now, navigate to ``http://symfony-demo.test`` in your web browser and enjoy
 developing your Symfony application!
 
 .. seealso::
@@ -69,8 +72,8 @@ developing your Symfony application!
     integration, automatic creation of MySQL databases and more, read the
     `Daily Usage`_ section of the Homestead documentation.
 
-.. _Homestead: http://laravel.com/docs/homestead
+.. _Homestead: https://laravel.com/docs/homestead
 .. _Vagrant: https://www.vagrantup.com/
-.. _the Homestead documentation: http://laravel.com/docs/homestead#installation-and-setup
-.. _Daily Usage: http://laravel.com/docs/5.1/homestead#daily-usage
-.. _this blog post: http://www.whitewashing.de/2013/08/19/speedup_symfony2_on_vagrant_boxes.html
+.. _the Homestead documentation: https://laravel.com/docs/homestead#installation-and-setup
+.. _Daily Usage: https://laravel.com/docs/homestead#daily-usage
+.. _this blog post: https://www.whitewashing.de/2013/08/19/speedup_symfony2_on_vagrant_boxes.html

@@ -14,18 +14,18 @@ is easy and natural with the Form component.
 Embedding a Single Object
 -------------------------
 
-Suppose that each ``Task`` belongs to a simple ``Category`` object. Start,
-of course, by creating the ``Category`` object::
+Suppose that each ``Task`` belongs to a simple ``Category`` object. Start by
+creating the ``Category`` object::
 
-    // src/AppBundle/Entity/Category.php
-    namespace AppBundle\Entity;
+    // src/Entity/Category.php
+    namespace App\Entity;
 
     use Symfony\Component\Validator\Constraints as Assert;
 
     class Category
     {
         /**
-         * @Assert\NotBlank()
+         * @Assert\NotBlank
          */
         public $name;
     }
@@ -39,8 +39,8 @@ Next, add a new ``category`` property to the ``Task`` class::
         // ...
 
         /**
-         * @Assert\Type(type="AppBundle\Entity\Category")
-         * @Assert\Valid()
+         * @Assert\Type(type="App\Entity\Category")
+         * @Assert\Valid
          */
         protected $category;
 
@@ -66,9 +66,10 @@ Next, add a new ``category`` property to the ``Task`` class::
 Now that your application has been updated to reflect the new requirements,
 create a form class so that a ``Category`` object can be modified by the user::
 
-    // src/AppBundle/Form/CategoryType.php
-    namespace AppBundle\Form;
+    // src/Form/CategoryType.php
+    namespace App\Form;
 
+    use App\Entity\Category;
     use Symfony\Component\Form\AbstractType;
     use Symfony\Component\Form\FormBuilderInterface;
     use Symfony\Component\OptionsResolver\OptionsResolver;
@@ -83,7 +84,7 @@ create a form class so that a ``Category`` object can be modified by the user::
         public function configureOptions(OptionsResolver $resolver)
         {
             $resolver->setDefaults(array(
-                'data_class' => 'AppBundle\Entity\Category',
+                'data_class' => Category::class,
             ));
         }
     }
@@ -94,7 +95,7 @@ to the ``TaskType`` object whose type is an instance of the new ``CategoryType``
 class::
 
     use Symfony\Component\Form\FormBuilderInterface;
-    use AppBundle\Form\CategoryType;
+    use App\Form\CategoryType;
 
     public function buildForm(FormBuilderInterface $builder, array $options)
     {
@@ -108,29 +109,16 @@ the ``TaskType`` class.
 
 Render the ``Category`` fields in the same way as the original ``Task`` fields:
 
-.. configuration-block::
+.. code-block:: html+twig
 
-    .. code-block:: html+twig
+    {# ... #}
 
-        {# ... #}
+    <h3>Category</h3>
+    <div class="category">
+        {{ form_row(form.category.name) }}
+    </div>
 
-        <h3>Category</h3>
-        <div class="category">
-            {{ form_row(form.category.name) }}
-        </div>
-
-        {# ... #}
-
-    .. code-block:: html+php
-
-        <!-- ... -->
-
-        <h3>Category</h3>
-        <div class="category">
-            <?php echo $view['form']->row($form['category']['name']) ?>
-        </div>
-
-        <!-- ... -->
+    {# ... #}
 
 When the user submits the form, the submitted data for the ``Category`` fields
 are used to construct an instance of ``Category``, which is then set on the

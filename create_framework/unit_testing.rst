@@ -52,16 +52,19 @@ resolver. Modify the framework to make use of them::
 
     use Symfony\Component\Routing\Matcher\UrlMatcherInterface;
     use Symfony\Component\HttpKernel\Controller\ControllerResolverInterface;
+    use Symfony\Component\HttpKernel\Controller\ArgumentResolverInterface;
 
     class Framework
     {
         protected $matcher;
         protected $resolver;
+        protected $argumentResolver;
 
-        public function __construct(UrlMatcherInterface $matcher, ControllerResolverInterface $resolver)
+        public function __construct(UrlMatcherInterface $matcher, ControllerResolverInterface $resolver, ArgumentResolverInterface $argumentResolver)
         {
             $this->matcher = $matcher;
             $this->resolver = $resolver;
+            $this->argumentResolver = $argumentResolver;
         }
 
         // ...
@@ -72,11 +75,15 @@ We are now ready to write our first test::
     // example.com/tests/Simplex/Tests/FrameworkTest.php
     namespace Simplex\Tests;
 
+    use PHPUnit\Framework\TestCase;
     use Simplex\Framework;
     use Symfony\Component\HttpFoundation\Request;
+    use Symfony\Component\HttpKernel\Controller\ArgumentResolverInterface;
+    use Symfony\Component\HttpKernel\Controller\ControllerResolverInterface;
+    use Symfony\Component\Routing;
     use Symfony\Component\Routing\Exception\ResourceNotFoundException;
 
-    class FrameworkTest extends \PHPUnit_Framework_TestCase
+    class FrameworkTest extends TestCase
     {
         public function testNotFoundHandling()
         {
@@ -89,7 +96,10 @@ We are now ready to write our first test::
 
         private function getFrameworkForException($exception)
         {
-            $matcher = $this->getMock('Symfony\Component\Routing\Matcher\UrlMatcherInterface');
+            $matcher = $this->createMock(Routing\Matcher\UrlMatcherInterface::class);
+            // use getMock() on PHPUnit 5.3 or below
+            // $matcher = $this->getMock(Routing\Matcher\UrlMatcherInterface::class);
+
             $matcher
                 ->expects($this->once())
                 ->method('match')
@@ -98,11 +108,12 @@ We are now ready to write our first test::
             $matcher
                 ->expects($this->once())
                 ->method('getContext')
-                ->will($this->returnValue($this->getMock('Symfony\Component\Routing\RequestContext')))
+                ->will($this->returnValue($this->createMock(Routing\RequestContext::class)))
             ;
-            $resolver = $this->getMock('Symfony\Component\HttpKernel\Controller\ControllerResolverInterface');
+            $controllerResolver = $this->createMock(ControllerResolverInterface::class);
+            $argumentResolver = $this->createMock(ArgumentResolverInterface::class);
 
-            return new Framework($matcher, $resolver);
+            return new Framework($matcher, $controllerResolver, $argumentResolver);
         }
     }
 
@@ -110,10 +121,9 @@ This test simulates a request that does not match any route. As such, the
 ``match()`` method returns a ``ResourceNotFoundException`` exception and we
 are testing that our framework converts this exception to a 404 response.
 
-Executing this test is as simple as running ``phpunit`` from the
-``example.com`` directory:
+Execute this test by running ``phpunit`` in the ``example.com`` directory:
 
-.. code-block:: bash
+.. code-block:: terminal
 
     $ phpunit
 
@@ -125,7 +135,8 @@ Executing this test is as simple as running ``phpunit`` from the
 After the test ran, you should see a green bar. If not, you have a bug
 either in the test or in the framework code!
 
-Adding a unit test for any exception thrown in a controller is just as easy::
+Adding a unit test for any exception thrown in a controller means expecting a
+response code of 500::
 
     public function testErrorHandling()
     {
@@ -141,10 +152,15 @@ Response::
 
     use Symfony\Component\HttpFoundation\Response;
     use Symfony\Component\HttpKernel\Controller\ControllerResolver;
+    use Symfony\Component\HttpKernel\Controller\ArgumentResolver;
+    // ...
 
     public function testControllerResponse()
     {
-        $matcher = $this->getMock('Symfony\Component\Routing\Matcher\UrlMatcherInterface');
+        $matcher = $this->createMock(Routing\Matcher\UrlMatcherInterface::class);
+        // use getMock() on PHPUnit 5.3 or below
+        // $matcher = $this->getMock(Routing\Matcher\UrlMatcherInterface::class);
+
         $matcher
             ->expects($this->once())
             ->method('match')
@@ -159,11 +175,12 @@ Response::
         $matcher
             ->expects($this->once())
             ->method('getContext')
-            ->will($this->returnValue($this->getMock('Symfony\Component\Routing\RequestContext')))
+            ->will($this->returnValue($this->createMock(Routing\RequestContext::class)))
         ;
-        $resolver = new ControllerResolver();
+        $controllerResolver = new ControllerResolver();
+        $argumentResolver = new ArgumentResolver();
 
-        $framework = new Framework($matcher, $resolver);
+        $framework = new Framework($matcher, $controllerResolver, $argumentResolver);
 
         $response = $framework->handle(new Request());
 
@@ -178,7 +195,7 @@ the one we have set in the controller.
 To check that we have covered all possible use cases, run the PHPUnit test
 coverage feature (you need to enable `XDebug`_ first):
 
-.. code-block:: bash
+.. code-block:: terminal
 
     $ phpunit --coverage-html=cov/
 
@@ -188,11 +205,11 @@ been visited when the tests were executed).
 
 Alternatively you can output the result directly to the console:
 
-.. code-block:: bash
+.. code-block:: terminal
 
     $ phpunit --coverage-text
 
-Thanks to the simple object-oriented code that we have written so far, we have
+Thanks to the clean object-oriented code that we have written so far, we have
 been able to write unit-tests to cover all possible use cases of our
 framework; test doubles ensured that we were actually testing our code and not
 Symfony code.
@@ -202,4 +219,4 @@ safely think about the next batch of features we want to add to our framework.
 
 .. _`PHPUnit`: https://phpunit.de/manual/current/en/index.html
 .. _`test doubles`: https://phpunit.de/manual/current/en/test-doubles.html
-.. _`XDebug`: http://xdebug.org/
+.. _`XDebug`: https://xdebug.org/

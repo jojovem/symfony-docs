@@ -36,12 +36,10 @@ This interface requires four methods:
 :method:`Symfony\\Component\\Form\\FormTypeGuesserInterface::guessPattern`
     Tries to guess the value of the ``pattern`` input attribute.
 
-Start by creating the class and these methods. Next, you'll learn how to fill each on.
+Start by creating the class and these methods. Next, you'll learn how to fill each in::
 
-.. code-block:: php
-
-    // src/AppBundle/Form/TypeGuesser/PHPDocTypeGuesser.php
-    namespace AppBundle\Form\TypeGuesser;
+    // src/Form/TypeGuesser/PHPDocTypeGuesser.php
+    namespace App\Form\TypeGuesser;
 
     use Symfony\Component\Form\FormTypeGuesserInterface;
 
@@ -83,10 +81,10 @@ The ``TypeGuess`` constructor requires three options:
   ``VERY_HIGH_CONFIDENCE``. After all type guessers have been executed, the
   type with the highest confidence is used.
 
-With this knowledge, you can easily implement the ``guessType()`` method of the
+With this knowledge, you can implement the ``guessType()`` method of the
 ``PHPDocTypeGuesser``::
 
-    namespace AppBundle\Form\TypeGuesser;
+    namespace App\Form\TypeGuesser;
 
     use Symfony\Component\Form\Guess\Guess;
     use Symfony\Component\Form\Guess\TypeGuess;
@@ -138,7 +136,7 @@ With this knowledge, you can easily implement the ``guessType()`` method of the
             $phpdoc = $reflectionProperty->getDocComment();
 
             // parse the $phpdoc into an array like:
-            // array('type' => 'string', 'since' => '1.0')
+            // array('var' => 'string', 'since' => '1.0')
             $phpdocTags = ...;
 
             return $phpdocTags;
@@ -175,43 +173,46 @@ set.
 Registering a Type Guesser
 --------------------------
 
+If you're using :ref:`autowire <services-autowire>` and
+:ref:`autoconfigure <services-autoconfigure>`, you're done! Symfony already knows
+and is using your form type guesser.
 
-The last thing you need to do is registering your custom type guesser by
-creating a service and tagging it as ``form.type_guesser``:
+If you're **not** using autowire and autoconfigure, register your service manually
+and tag it with ``form.type_guesser``:
 
 .. configuration-block::
 
     .. code-block:: yaml
 
-        # app/config/services.yml
+        # config/services.yaml
         services:
+            # ...
 
-            app.phpdoc_type_guesser:
-                class: AppBundle\Form\TypeGuesser\PHPDocTypeGuesser
-                tags:
-                    - { name: form.type_guesser }
+            App\Form\TypeGuesser\PHPDocTypeGuesser:
+                tags: [form.type_guesser]
 
     .. code-block:: xml
 
-        <!-- app/config/services.xml -->
+        <!-- config/services.xml -->
         <?xml version="1.0" encoding="UTF-8" ?>
         <container xmlns="http://symfony.com/schema/dic/services"
-            xmlns:xsd="http://www.w3.org/2001/XMLSchema-instance"
-            xsd:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/schema/dic/services/services-1.0.xsd"
-        >
-            <services>
+            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+            xsi:schemaLocation="http://symfony.com/schema/dic/services
+                http://symfony.com/schema/dic/services/services-1.0.xsd">
 
-                <service class="AppBundle\Form\TypeGuesser\PHPDocTypeGuesser">
+            <services>
+                <service id="App\Form\TypeGuesser\PHPDocTypeGuesser">
                     <tag name="form.type_guesser"/>
                 </service>
-
             </services>
         </container>
 
     .. code-block:: php
 
-        // app/config/services.php
-        $container->register('AppBundle\Form\TypeGuesser\PHPDocTypeGuesser')
+        // config/services.php
+        use App\Form\TypeGuesser\PHPDocTypeGuesser;
+
+        $container->register(PHPDocTypeGuesser::class)
             ->addTag('form.type_guesser')
         ;
 

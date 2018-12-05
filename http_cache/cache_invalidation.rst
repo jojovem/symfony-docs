@@ -47,17 +47,18 @@ the word "PURGE" is a convention, technically this can be any string) instead
 of ``GET`` and make the cache proxy detect this and remove the data from the
 cache instead of going to the application to get a response.
 
-Here is how you can configure the Symfony reverse proxy to support the
-``PURGE`` HTTP method::
+Here is how you can configure the Symfony reverse proxy (See :doc:`/http_cache`)
+to support the ``PURGE`` HTTP method::
 
-    // app/AppCache.php
+    // src/CacheKernel.php
+    namespace App;
 
     use Symfony\Bundle\FrameworkBundle\HttpCache\HttpCache;
     use Symfony\Component\HttpFoundation\Request;
     use Symfony\Component\HttpFoundation\Response;
     // ...
 
-    class AppCache extends HttpCache
+    class CacheKernel extends HttpCache
     {
         protected function invalidate(Request $request, $catch = false)
         {
@@ -74,9 +75,9 @@ Here is how you can configure the Symfony reverse proxy to support the
 
             $response = new Response();
             if ($this->getStore()->purge($request->getUri())) {
-                $response->setStatusCode(200, 'Purged');
+                $response->setStatusCode(Response::HTTP_OK, 'Purged');
             } else {
-                $response->setStatusCode(404, 'Not found');
+                $response->setStatusCode(Response::HTTP_NOT_FOUND, 'Not found');
             }
 
             return $response;

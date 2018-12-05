@@ -33,7 +33,7 @@ As we now extract the request query parameters, simplify the ``hello.php``
 template as follows::
 
     <!-- example.com/src/pages/hello.php -->
-    Hello <?php echo htmlspecialchars(isset($name) ? $name : 'World', ENT_QUOTES, 'UTF-8') ?>
+    Hello <?= htmlspecialchars(isset($name) ? $name : 'World', ENT_QUOTES, 'UTF-8') ?>
 
 Now, we are in good shape to add new features.
 
@@ -45,7 +45,7 @@ want to support dynamic paths to allow embedding data directly into the URL
 
 To support this feature, add the Symfony Routing component as a dependency:
 
-.. code-block:: bash
+.. code-block:: terminal
 
     $ composer require symfony/routing
 
@@ -56,7 +56,7 @@ Instead of an array for the URL map, the Routing component relies on a
 
     $routes = new RouteCollection();
 
-Let's add a route that describe the ``/hello/SOMETHING`` URL and add another
+Let's add a route that describes the ``/hello/SOMETHING`` URL and add another
 one for the simple ``/bye`` one::
 
     use Symfony\Component\Routing\Route;
@@ -149,9 +149,9 @@ With this knowledge in mind, let's write the new version of our framework::
         include sprintf(__DIR__.'/../src/pages/%s.php', $_route);
 
         $response = new Response(ob_get_clean());
-    } catch (Routing\Exception\ResourceNotFoundException $e) {
+    } catch (Routing\Exception\ResourceNotFoundException $exception) {
         $response = new Response('Not Found', 404);
-    } catch (Exception $e) {
+    } catch (Exception $exception) {
         $response = new Response('An error occurred', 500);
     }
 
@@ -166,7 +166,7 @@ There are a few new things in the code:
 * Request attributes are extracted to keep our templates simple::
 
       <!-- example.com/src/pages/hello.php -->
-      Hello <?php echo htmlspecialchars($name, ENT_QUOTES, 'UTF-8') ?>
+      Hello <?= htmlspecialchars($name, ENT_QUOTES, 'UTF-8') ?>
 
 * Route configuration has been moved to its own file::
 
@@ -189,7 +189,8 @@ more flexible than the previous one. Enjoy!
 Using the Routing component has one big additional benefit: the ability to
 generate URLs based on Route definitions. When using both URL matching and URL
 generation in your code, changing the URL patterns should have no other
-impact. Want to know how to use the generator? Insanely easy::
+impact. Want to know how to use the generator? Calling the ``generate`` method
+is all it takes::
 
     use Symfony\Component\Routing;
 

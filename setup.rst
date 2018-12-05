@@ -4,264 +4,132 @@
 Installing & Setting up the Symfony Framework
 =============================================
 
-This article explains how to install Symfony in different ways and how to solve
-the most common issues that may appear during the installation process.
+.. admonition:: Screencast
+    :class: screencast
 
-.. seealso::
+    Do you prefer video tutorials? Check out the `Stellar Development with Symfony`_
+    screencast series.
 
-    Do you prefer video tutorials? Check out the `Joyful Development with Symfony`_
-    screencast series from KnpUniversity.
+To create your new Symfony application, first make sure you're using PHP 7.1 or higher
+and have `Composer`_ installed. If you don't, start by :doc:`installing Composer globally </setup/composer>`
+on your system. If you want to use a virtual machine (VM), check out :doc:`Homestead </setup/homestead>`.
 
-Creating Symfony Applications
------------------------------
+Create your new project by running:
 
-Symfony provides a dedicated application called the **Symfony Installer** to ease
-the creation of Symfony applications. This installer is a PHP 5.4 compatible
-executable that needs to be installed on your system only once:
+.. code-block:: terminal
 
-.. code-block:: bash
+    $ composer create-project symfony/website-skeleton my-project
 
-    # Linux and macOS systems
-    $ sudo curl -LsS https://symfony.com/installer -o /usr/local/bin/symfony
-    $ sudo chmod a+x /usr/local/bin/symfony
-
-    # Windows systems
-    c:\> php -r "readfile('https://symfony.com/installer');" > symfony
-
-.. note::
-
-    In Linux and macOS, a global ``symfony`` command is created. In Windows,
-    move the ``symfony`` file to a directory that's included in the ``PATH``
-    environment variable to create the global command or move it to any other
-    directory convenient for you:
-
-    .. code-block:: bash
-
-        # for example, if WAMP is used ...
-        c:\> move symfony c:\wamp\bin\php
-        # ... then, execute the command as:
-        c:\> symfony
-
-        # moving it to your projects folder ...
-        c:\> move symfony c:\projects
-        # ... then, execute the command as
-        c:\> cd projects
-        c:\projects\> php symfony
-
-.. _installation-creating-the-app:
-
-Once the Symfony Installer is installed, create your first Symfony application
-with the ``new`` command:
-
-.. code-block:: bash
-
-    $ symfony new my_project_name
-
-This command creates a new directory called ``my_project_name/`` that contains
-an empty project based on the most recent stable Symfony version available. In
-addition, the installer checks if your system meets the technical requirements
-to execute Symfony applications. If not, you'll see the list of changes needed
-to meet those requirements.
-
-.. note::
-
-    If the installer doesn't work for you or doesn't output anything, make sure
-    that the PHP `Phar extension`_ is installed and enabled on your computer.
-
-Basing your Project on a Specific Symfony Version
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-In case your project needs to be based on a specific Symfony version, use the
-optional second argument of the ``new`` command:
-
-.. code-block:: bash
-
-    # use the most recent version in any Symfony branch
-    $ symfony new my_project_name 2.8
-    $ symfony new my_project_name 3.1
-
-    # use a specific Symfony version
-    $ symfony new my_project_name 2.8.3
-    $ symfony new my_project_name 3.1.5
-
-    # use a beta or RC version (useful for testing new Symfony versions)
-    $ symfony new my_project 2.7.0-BETA1
-    $ symfony new my_project 2.7.0-RC1
-
-    # use the most recent 'lts' version (Long Term Support version)
-    $ symfony new my_project_name lts
-
-.. note::
-
-    Read the :doc:`Symfony Release process </contributing/community/releases>`
-    to better understand why there are several Symfony versions and which one
-    to use for your projects.
-
-Creating Symfony Applications with Composer
--------------------------------------------
-
-If you still use PHP 5.3 or can't use the Symfony installer for any reason, you
-can create Symfony applications with `Composer`_, the dependency manager used by
-modern PHP applications.
-
-If you don't have Composer installed in your computer, start by
-:doc:`installing Composer globally </setup/composer>`. Then, execute the
-``create-project`` command to create a new Symfony application based on its
-latest stable version:
-
-.. code-block:: bash
-
-    $ composer create-project symfony/framework-standard-edition my_project_name
-
-You can also install any other Symfony version by passing a second argument to
-the ``create-project`` command:
-
-.. code-block:: bash
-
-    $ composer create-project symfony/framework-standard-edition my_project_name "2.8.*"
+This will create a new ``my-project`` directory, download some dependencies into
+it and even generate the basic directories and files you'll need to get started.
+In other words, your new app is ready!
 
 .. tip::
 
-    If your Internet connection is slow, you may think that Composer is not
-    doing anything. If that's your case, add the ``-vvv`` flag to the previous
-    command to display a detailed output of everything that Composer is doing.
+    The ``website-skeleton`` is optimized for traditional web applications. If
+    you are building microservices, console applications or APIs, consider
+    using the much simpler ``skeleton`` project:
 
-Running the Symfony Application
--------------------------------
+    .. code-block:: terminal
 
-Symfony leverages the internal PHP web server (available since PHP 5.4) to run
-applications while developing them. Therefore, running a Symfony application is
-a matter of browsing to the project directory and executing this command:
+        $ composer create-project symfony/skeleton my-project
 
-.. code-block:: bash
+        # optional: install the web server bundle (explained next)
+        $ cd my-project
+        $ composer require symfony/web-server-bundle --dev
 
-    $ cd my_project_name/
+Running your Symfony Application
+--------------------------------
+
+On production, you should use a web server like Nginx or Apache
+(see :doc:`configuring a web server to run Symfony </setup/web_server_configuration>`).
+But for development, it's convenient to use the :doc:`Symfony PHP web server <setup/built_in_web_server>`.
+
+Move into your new project and start the server:
+
+.. code-block:: terminal
+
+    $ cd my-project
     $ php bin/console server:run
 
-Then, open your browser and access the ``http://localhost:8000/`` URL to see the
-Welcome Page of Symfony:
-
-.. image:: /_images/quick_tour/welcome.png
-   :align: center
-   :alt:   Symfony Welcome Page
-   :class: with-browser
-
-If you see a blank page or an error page instead of the Welcome Page, there is
-a directory permission misconfiguration. The solution to this problem is
-explained in the :doc:`/setup/file_permissions`.
-
-When you are finished working on your Symfony application, stop the server by
-pressing ``Ctrl+C`` from the terminal or command console.
+Open your browser and navigate to ``http://localhost:8000/``. If everything is working,
+you'll see a welcome page. Later, when you are finished working, stop the server
+by pressing ``Ctrl+C`` from your terminal.
 
 .. tip::
 
-    PHP's internal web server is great for developing, but should **not** be
-    used on production. Instead, use Apache or Nginx.
-    See :doc:`/setup/web_server_configuration`.
+    If you're having any problems running Symfony, your system may be missing
+    some technical requirements. Use the :doc:`Symfony Requirements Checker </reference/requirements>`
+    tool to make sure your system is set up.
 
-Checking Symfony Application Configuration and Setup
-----------------------------------------------------
+.. tip::
 
-The Symfony Installer checks if your system is ready to run Symfony applications.
-However, the PHP configuration for the command console can be different from the
-PHP web configuration. For that reason, Symfony provides a visual configuration
-checker. Access the following URL to check your configuration and fix any issue
-before moving on:
+    If you're using a VM, you may need to tell the server to bind to all IP addresses:
 
-.. code-block:: text
+    .. code-block:: terminal
 
-    http://localhost:8000/config.php
+        $ php bin/console server:start 0.0.0.0:8000
 
-Fixing Permissions Problems
+    You should **NEVER** listen to all interfaces on a computer that is
+    directly accessible from the Internet.
+
+Storing your Project in git
 ---------------------------
 
-If you have any file permission errors or see a white screen, then read
-:doc:`/setup/file_permissions` for more information.
+Storing your project in services like GitHub, GitLab and Bitbucket works like with
+any other code project! Init a new repository with ``Git`` and you are ready to push
+to your remote:
 
-.. _installation-updating-vendors:
+.. code-block:: terminal
 
-Updating Symfony Applications
------------------------------
+    $ git init
+    $ git add .
+    $ git commit -m "Initial commit"
 
-At this point, you've created a fully-functional Symfony application! Every Symfony
-app depends on a number of third-party libraries stored in the ``vendor/`` directory
-and managed by Composer.
-
-Updating those libraries frequently is a good practice to prevent bugs and
-security vulnerabilities. Execute the ``update`` Composer command to update them
-all at once (this can take up to several minutes to complete depending on the
-complexity of your project):
-
-.. code-block:: bash
-
-    $ cd my_project_name/
-    $ composer update
-
-.. tip::
-
-    Symfony provides a command to check whether your project's dependencies
-    contain any known security vulnerability:
-
-    .. code-block:: bash
-
-        $ php bin/console security:check
-
-    A good security practice is to execute this command regularly to be able to
-    update or replace compromised dependencies as soon as possible.
-
-.. _installing-a-symfony2-distribution:
-
-Installing the Symfony Demo or Other Distributions
---------------------------------------------------
-
-You've already downloaded the `Symfony Standard Edition`_: the default starting project
-for all Symfony apps. You'll use this project throughout the documentation to build
-your app!
-
-Symfony also provides some other projects and starting skeletons that you can use:
-
-`The Symfony Demo Application`_
-    This is a fully-functional application that shows the recommended way to develop
-    Symfony applications. The app has been conceived as a learning tool for Symfony
-    newcomers and its source code contains tons of comments and helpful notes.
-
-`The Symfony CMF Standard Edition`_
-    The `Symfony CMF`_ is a project that helps make it easier for developers to add
-    CMS functionality to their Symfony applications. This is a starting project
-    containing the Symfony CMF.
-
-`The Symfony REST Edition`_
-    Shows how to build an application that provides a RESTful API using the
-    `FOSRestBundle`_ and several other related Bundles.
+Your project already has a sensible ``.gitignore`` file. And as you install more
+packages, a system called :ref:`Flex <flex-quick-intro>` will add more lines to
+that file when needed.
 
 .. _install-existing-app:
 
-Installing an Existing Symfony Application
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Setting up an Existing Symfony Project
+--------------------------------------
 
-When working collaboratively in a Symfony application, it's uncommon to create
-a new Symfony application as explained in the previous sections. Instead,
-someone else has already created and submitted it to a shared repository.
+If you're working on an existing Symfony application, you only need to get the
+project code and install the dependencies with Composer. Assuming your team uses Git,
+setup your project with the following commands:
 
-It's recommended to not submit some files (:ref:`parameters.yml <config-parameters-yml>`)
-and directories (``vendor/``, cache, logs) to the repository, so you'll have to do
-the following when installing an existing Symfony application:
-
-.. code-block:: bash
+.. code-block:: terminal
 
     # clone the project to download its contents
     $ cd projects/
     $ git clone ...
 
     # make Composer install the project's dependencies into vendor/
-    $ cd my_project_name/
+    $ cd my-project/
     $ composer install
 
-    # now Composer will ask you for the values of any undefined parameter
-    $ ...
+You'll probably also need to customize your :ref:`.env <config-dot-env>` and do a
+few other project-specific tasks (e.g. creating database schema).
 
-Keep Going!
------------
+Checking for Security Vulnerabilities
+-------------------------------------
+
+Symfony provides a utility called the "Security Checker" to check whether your
+project's dependencies contain any known security vulnerability. Check out
+the integration instructions for `the Security Checker`_ to set it up.
+
+The Symfony Demo application
+----------------------------
+
+`The Symfony Demo Application`_ is a fully-functional application that shows the
+recommended way to develop Symfony applications. It's a great learning tool for
+Symfony newcomers and its code contains tons of comments and helpful notes.
+
+To check out its code and install it locally, see `symfony/symfony-demo`_.
+
+Start Coding!
+-------------
 
 With setup behind you, it's time to :doc:`Create your first page in Symfony </page_creation>`.
 
@@ -278,18 +146,13 @@ Go Deeper with Setup
     :glob:
 
     setup/homestead
-    setup/new_project_git
     setup/built_in_web_server
     setup/web_server_configuration
     setup/composer
     setup/*
 
-.. _`Joyful Development with Symfony`: http://knpuniversity.com/screencast/symfony
+.. _`Stellar Development with Symfony`: http://symfonycasts.com/screencast/symfony
 .. _`Composer`: https://getcomposer.org/
-.. _`Phar extension`: http://php.net/manual/en/intro.phar.php
-.. _`Symfony Standard Edition`: https://github.com/symfony/symfony-standard
-.. _`The Symfony Demo application`: https://github.com/symfony/symfony-demo
-.. _`The Symfony CMF Standard Edition`: https://github.com/symfony-cmf/symfony-cmf-standard
-.. _`Symfony CMF`: http://cmf.symfony.com/
-.. _`The Symfony REST Edition`: https://github.com/gimler/symfony-rest-edition
-.. _`FOSRestBundle`: https://github.com/FriendsOfSymfony/FOSRestBundle
+.. _`the Security Checker`: https://github.com/sensiolabs/security-checker#integration
+.. _`The Symfony Demo application`: https://github.com/symfony/demo
+.. _`symfony/symfony-demo`: https://github.com/symfony/demo

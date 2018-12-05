@@ -18,41 +18,42 @@ inside your routing configuration:
 
     .. code-block:: yaml
 
-        # app/config/routing.yml
+        # config/routes.yaml
         contact:
-            path:     /{_locale}/contact
-            defaults: { _controller: AppBundle:Main:contact }
+            path:       /{_locale}/contact
+            controller: App\Controller\MainController::contact
             requirements:
                 _locale: '%app.locales%'
 
     .. code-block:: xml
 
-        <!-- app/config/routing.xml -->
+        <!-- config/routes.xml -->
         <?xml version="1.0" encoding="UTF-8" ?>
         <routes xmlns="http://symfony.com/schema/routing"
             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-            xsi:schemaLocation="http://symfony.com/schema/routing http://symfony.com/schema/routing/routing-1.0.xsd">
+            xsi:schemaLocation="http://symfony.com/schema/routing
+                http://symfony.com/schema/routing/routing-1.0.xsd">
 
             <route id="contact" path="/{_locale}/contact">
-                <default key="_controller">AppBundle:Main:contact</default>
+                <default key="_controller">App\Controller\MainController::contact</default>
                 <requirement key="_locale">%app.locales%</requirement>
             </route>
         </routes>
 
     .. code-block:: php
 
-        // app/config/routing.php
+        // config/routes.php
         use Symfony\Component\Routing\RouteCollection;
         use Symfony\Component\Routing\Route;
 
-        $collection = new RouteCollection();
-        $collection->add('contact', new Route('/{_locale}/contact', array(
-            '_controller' => 'AppBundle:Main:contact',
+        $routes = new RouteCollection();
+        $routes->add('contact', new Route('/{_locale}/contact', array(
+            '_controller' => 'App\Controller\MainController::contact',
         ), array(
             '_locale' => '%app.locales%',
         )));
 
-        return $collection;
+        return $routes;
 
 You can now control and set the  ``app.locales`` parameter somewhere
 in your container:
@@ -61,20 +62,27 @@ in your container:
 
     .. code-block:: yaml
 
-        # app/config/config.yml
+        # config/services.yaml
         parameters:
             app.locales: en|es
 
     .. code-block:: xml
 
-        <!-- app/config/config.xml -->
-        <parameters>
-            <parameter key="app.locales">en|es</parameter>
-        </parameters>
+        <!-- config/services.xml -->
+        <?xml version="1.0" charset="UTF-8" ?>
+        <container xmlns="http://symfony.com/schema/dic/services"
+            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+            xsi:schemaLocation="http://symfony.com/schema/dic/services
+                http://symfony.com/schema/dic/services/services-1.0.xsd">
+
+            <parameters>
+                <parameter key="app.locales">en|es</parameter>
+            </parameters>
+        </container>
 
     .. code-block:: php
 
-        // app/config/config.php
+        // config/services.php
         $container->setParameter('app.locales', 'en|es');
 
 You can also use a parameter to define your route path (or part of your
@@ -84,36 +92,37 @@ path):
 
     .. code-block:: yaml
 
-        # app/config/routing.yml
+        # config/routes.yaml
         some_route:
-            path:     /%app.route_prefix%/contact
-            defaults: { _controller: AppBundle:Main:contact }
+            path:       /%app.route_prefix%/contact
+            controller: App\Controller\MainController::contact
 
     .. code-block:: xml
 
-        <!-- app/config/routing.xml -->
+        <!-- config/routes.xml -->
         <?xml version="1.0" encoding="UTF-8" ?>
         <routes xmlns="http://symfony.com/schema/routing"
             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-            xsi:schemaLocation="http://symfony.com/schema/routing http://symfony.com/schema/routing/routing-1.0.xsd">
+            xsi:schemaLocation="http://symfony.com/schema/routing
+                http://symfony.com/schema/routing/routing-1.0.xsd">
 
             <route id="some_route" path="/%app.route_prefix%/contact">
-                <default key="_controller">AppBundle:Main:contact</default>
+                <default key="_controller">App\Controller\MainController::contact</default>
             </route>
         </routes>
 
     .. code-block:: php
 
-        // app/config/routing.php
+        // config/routes.php
         use Symfony\Component\Routing\RouteCollection;
         use Symfony\Component\Routing\Route;
 
-        $collection = new RouteCollection();
-        $collection->add('some_route', new Route('/%app.route_prefix%/contact', array(
-            '_controller' => 'AppBundle:Main:contact',
+        $routes = new RouteCollection();
+        $routes->add('some_route', new Route('/%app.route_prefix%/contact', array(
+            '_controller' => 'App\Controller\MainController::contact',
         )));
 
-        return $collection;
+        return $routes;
 
 .. note::
 

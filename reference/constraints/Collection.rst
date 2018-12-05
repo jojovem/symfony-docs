@@ -32,14 +32,14 @@ Basic Usage
 The ``Collection`` constraint allows you to validate the different keys
 of a collection individually. Take the following example::
 
-    // src/AppBundle/Entity/Author.php
-    namespace AppBundle\Entity;
+    // src/Entity/Author.php
+    namespace App\Entity;
 
     class Author
     {
         protected $profileData = array(
-            'personal_email',
-            'short_bio',
+            'personal_email' => '...',
+            'short_bio' => '...',
         );
 
         public function setProfileData($key, $value)
@@ -57,8 +57,8 @@ following:
 
     .. code-block:: php-annotations
 
-        // src/AppBundle/Entity/Author.php
-        namespace AppBundle\Entity;
+        // src/Entity/Author.php
+        namespace App\Entity;
 
         use Symfony\Component\Validator\Constraints as Assert;
 
@@ -69,7 +69,7 @@ following:
              *     fields = {
              *         "personal_email" = @Assert\Email,
              *         "short_bio" = {
-             *             @Assert\NotBlank(),
+             *             @Assert\NotBlank,
              *             @Assert\Length(
              *                 max = 100,
              *                 maxMessage = "Your short bio is too long!"
@@ -80,22 +80,22 @@ following:
              * )
              */
              protected $profileData = array(
-                 'personal_email',
-                 'short_bio',
+                 'personal_email' => '...',
+                 'short_bio' => '...',
              );
         }
 
     .. code-block:: yaml
 
-        # src/AppBundle/Resources/config/validation.yml
-        AppBundle\Entity\Author:
+        # config/validator/validation.yaml
+        App\Entity\Author:
             properties:
                 profileData:
                     - Collection:
                         fields:
                             personal_email: Email
                             short_bio:
-                                - NotBlank
+                                - NotBlank: ~
                                 - Length:
                                     max:   100
                                     maxMessage: Your short bio is too long!
@@ -103,13 +103,13 @@ following:
 
     .. code-block:: xml
 
-        <!-- src/AppBundle/Resources/config/validation.xml -->
+        <!-- config/validator/validation.xml -->
         <?xml version="1.0" encoding="UTF-8" ?>
         <constraint-mapping xmlns="http://symfony.com/schema/dic/constraint-mapping"
             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
             xsi:schemaLocation="http://symfony.com/schema/dic/constraint-mapping http://symfony.com/schema/dic/constraint-mapping/constraint-mapping-1.0.xsd">
 
-            <class name="AppBundle\Entity\Author">
+            <class name="App\Entity\Author">
                 <property name="profileData">
                     <constraint name="Collection">
                         <option name="fields">
@@ -132,8 +132,8 @@ following:
 
     .. code-block:: php
 
-        // src/AppBundle/Entity/Author.php
-        namespace AppBundle\Entity;
+        // src/Entity/Author.php
+        namespace App\Entity;
 
         use Symfony\Component\Validator\Mapping\ClassMetadata;
         use Symfony\Component\Validator\Constraints as Assert;
@@ -192,8 +192,8 @@ you can do the following:
 
     .. code-block:: php-annotations
 
-        // src/AppBundle/Entity/Author.php
-        namespace AppBundle\Entity;
+        // src/Entity/Author.php
+        namespace App\Entity;
 
         use Symfony\Component\Validator\Constraints as Assert;
 
@@ -212,14 +212,14 @@ you can do the following:
 
     .. code-block:: yaml
 
-        # src/AppBundle/Resources/config/validation.yml
-        AppBundle\Entity\Author:
+        # config/validator/validation.yaml
+        App\Entity\Author:
             properties:
                 profile_data:
                     - Collection:
                         fields:
                             personal_email:
-                                - Required
+                                - Required:
                                     - NotBlank: ~
                                     - Email: ~
                             alternate_email:
@@ -228,13 +228,13 @@ you can do the following:
 
     .. code-block:: xml
 
-        <!-- src/AppBundle/Resources/config/validation.xml -->
+        <!-- config/validator/validation.xml -->
         <?xml version="1.0" encoding="UTF-8" ?>
         <constraint-mapping xmlns="http://symfony.com/schema/dic/constraint-mapping"
             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
             xsi:schemaLocation="http://symfony.com/schema/dic/constraint-mapping http://symfony.com/schema/dic/constraint-mapping/constraint-mapping-1.0.xsd">
 
-            <class name="AppBundle\Entity\Author">
+            <class name="App\Entity\Author">
                 <property name="profile_data">
                     <constraint name="Collection">
                         <option name="fields">
@@ -257,8 +257,8 @@ you can do the following:
 
     .. code-block:: php
 
-        // src/AppBundle/Entity/Author.php
-        namespace AppBundle\Entity;
+        // src/Entity/Author.php
+        namespace App\Entity;
 
         use Symfony\Component\Validator\Mapping\ClassMetadata;
         use Symfony\Component\Validator\Constraints as Assert;
@@ -310,10 +310,18 @@ error will be returned. If set to ``true``, extra fields are ok.
 extraFieldsMessage
 ~~~~~~~~~~~~~~~~~~
 
-**type**: ``boolean`` **default**: ``The fields {{ fields }} were not expected.``
+**type**: ``string`` **default**: ``This field was not expected.``
 
 The message shown if `allowExtraFields`_ is false and an extra field is
 detected.
+
+You can use the following parameters in this message:
+
++------------------+------------------------------------------------+
+| Parameter        | Description                                    |
++==================+================================================+
+| ``{{ field }}``  | The key of the extra field detected            |
++------------------+------------------------------------------------+
 
 allowMissingFields
 ~~~~~~~~~~~~~~~~~~
@@ -328,9 +336,17 @@ option are not present in the underlying collection.
 missingFieldsMessage
 ~~~~~~~~~~~~~~~~~~~~
 
-**type**: ``boolean`` **default**: ``The fields {{ fields }} are missing.``
+**type**: ``string`` **default**: ``This field is missing.``
 
 The message shown if `allowMissingFields`_ is false and one or more fields
 are missing from the underlying collection.
+
+You can use the following parameters in this message:
+
++------------------+----------------------------------------------------+
+| Parameter        | Description                                        |
++==================+====================================================+
+| ``{{ field }}``  | The key of the missing field defined in ``fields`` |
++------------------+----------------------------------------------------+
 
 .. include:: /reference/constraints/_payload-option.rst.inc

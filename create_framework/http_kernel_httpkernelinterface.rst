@@ -54,7 +54,10 @@ PHP; it implements ``HttpKernelInterface`` and wraps another
 ``HttpKernelInterface`` instance::
 
     // example.com/web/front.php
-    $framework = new Simplex\Framework($dispatcher, $matcher, $resolver);
+
+    // ..
+
+    $framework = new Simplex\Framework($dispatcher, $matcher, $controllerResolver, $argumentResolver);
     $framework = new HttpKernel\HttpCache\HttpCache(
         $framework,
         new HttpKernel\HttpCache\Store(__DIR__.'/../cache')
@@ -71,10 +74,10 @@ to cache a response for 10 seconds, use the ``Response::setTtl()`` method::
     // example.com/src/Calendar/Controller/LeapYearController.php
 
     // ...
-    public function indexAction(Request $request, $year)
+    public function index(Request $request, $year)
     {
-        $leapyear = new LeapYear();
-        if ($leapyear->isLeapYear($year)) {
+        $leapYear = new LeapYear();
+        if ($leapYear->isLeapYear($year)) {
             $response = new Response('Yep, this is a leap year!');
         } else {
             $response = new Response('Nope, this is not a leap year.');
@@ -89,7 +92,7 @@ to cache a response for 10 seconds, use the ``Response::setTtl()`` method::
 
     If, like me, you are running your framework from the command line by
     simulating requests (``Request::create('/is_leap_year/2012')``), you can
-    easily debug Response instances by dumping their string representation
+    debug Response instances by dumping their string representation
     (``echo $response;``) as it displays all headers as well as the response
     content.
 
@@ -110,9 +113,9 @@ expiration and the validation models of the HTTP specification. If you are not
 comfortable with these concepts, read the `HTTP caching`_ chapter of the
 Symfony documentation.
 
-The Response class contains many other methods that let you configure the
-HTTP cache very easily. One of the most powerful is ``setCache()`` as it
-abstracts the most frequently used caching strategies into one simple array::
+The Response class contains methods that let you configure the
+HTTP cache. One of the most powerful is ``setCache()`` as it
+abstracts the most frequently used caching strategies into a single array::
 
     $date = date_create_from_format('Y-m-d H:i:s', '2005-10-15 10:00:00');
 
@@ -132,7 +135,7 @@ abstracts the most frequently used caching strategies into one simple array::
     $response->setSharedMaxAge(10);
 
 When using the validation model, the ``isNotModified()`` method allows you to
-easily cut on the response time by short-circuiting the response generation as
+cut on the response time by short-circuiting the response generation as
 early as possible::
 
     $response->setETag('whatever_you_compute_as_an_etag');
@@ -203,6 +206,6 @@ With the addition of a single interface, our framework can now benefit from
 the many features built into the HttpKernel component; HTTP caching being just
 one of them but an important one as it can make your applications fly!
 
-.. _`HTTP caching`: http://symfony.com/doc/current/http_cache.html
+.. _`HTTP caching`: https://symfony.com/doc/current/http_cache.html
 .. _`ESI`: https://en.wikipedia.org/wiki/Edge_Side_Includes
 .. _`Varnish`: https://www.varnish-cache.org/

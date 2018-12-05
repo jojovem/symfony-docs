@@ -16,15 +16,22 @@ The Templating Component
 Installation
 ------------
 
-You can install the component in 2 different ways:
+.. code-block:: terminal
 
-* :doc:`Install it via Composer </components/using_components>` (``symfony/templating`` on `Packagist`_);
-* Use the official Git repository (https://github.com/symfony/templating).
+    $ composer require symfony/templating
+
+Alternatively, you can clone the `<https://github.com/symfony/templating>`_ repository.
 
 .. include:: /components/require_autoload.rst.inc
 
 Usage
 -----
+
+.. seealso::
+
+    This article explains how to use the Templating features as an independent
+    component in any PHP application. Read the :doc:`/templating` article to
+    learn about how to work with templates in Symfony applications.
 
 The :class:`Symfony\\Component\\Templating\\PhpEngine` class is the entry point
 of the component. It needs a
@@ -38,16 +45,16 @@ which uses the template reference to actually find and load the template::
     use Symfony\Component\Templating\TemplateNameParser;
     use Symfony\Component\Templating\Loader\FilesystemLoader;
 
-    $loader = new FilesystemLoader(__DIR__.'/views/%name%');
+    $filesystemLoader = new FilesystemLoader(__DIR__.'/views/%name%');
 
-    $templating = new PhpEngine(new TemplateNameParser(), $loader);
+    $templating = new PhpEngine(new TemplateNameParser(), $filesystemLoader);
 
     echo $templating->render('hello.php', array('firstname' => 'Fabien'));
 
 .. code-block:: html+php
 
     <!-- views/hello.php -->
-    Hello, <?php echo $firstname ?>!
+    Hello, <?= $firstname ?>!
 
 The :method:`Symfony\\Component\\Templating\\PhpEngine::render` method parses
 the ``views/hello.php`` file and returns the output text. The second argument
@@ -73,12 +80,12 @@ Including Templates
 
 The best way to share a snippet of template code is to create a template that
 can then be included by other templates. As the ``$view`` variable is an
-instance of ``PhpEngine``, you can use the ``render`` method (which was used
+instance of ``PhpEngine``, you can use the ``render()`` method (which was used
 to render the template originally) inside the template to render another template::
 
     <?php $names = array('Fabien', ...) ?>
     <?php foreach ($names as $name) : ?>
-        <?php echo $view->render('hello.php', array('firstname' => $name)) ?>
+        <?= $view->render('hello.php', array('firstname' => $name)) ?>
     <?php endforeach ?>
 
 Global Variables
@@ -96,7 +103,7 @@ In a template:
 
 .. code-block:: html+php
 
-    <p>The google tracking code is: <?php echo $ga_tracking ?></p>
+    <p>The google tracking code is: <?= $ga_tracking ?></p>
 
 .. caution::
 
@@ -116,13 +123,13 @@ JavaScript code isn't written out to your page. This will prevent things like
 XSS attacks. To do this, use the
 :method:`Symfony\\Component\\Templating\\PhpEngine::escape` method::
 
-    <?php echo $view->escape($firstname) ?>
+    <?= $view->escape($firstname) ?>
 
 By default, the ``escape()`` method assumes that the variable is outputted
 within an HTML context. The second argument lets you change the context. For
 example, to output something inside JavaScript, use the ``js`` context::
 
-    <?php echo $view->escape($var, 'js') ?>
+    <?= $view->escape($var, 'js') ?>
 
 The component comes with an HTML and JS escaper. You can register your own
 escaper using the
@@ -137,20 +144,19 @@ escaper using the
 Helpers
 -------
 
-The Templating component can be easily extended via helpers. Helpers are PHP objects that
-provide features useful in a template context. The component has
-2 built-in helpers:
+The Templating component can be extended via helpers. Helpers are PHP objects
+that provide features useful in a template context. The component has one
+built-in helper:
 
-* :doc:`/components/templating/assetshelper`
 * :doc:`/components/templating/slotshelper`
 
 Before you can use these helpers, you need to register them using
 :method:`Symfony\\Component\\Templating\\PhpEngine::set`::
 
-    use Symfony\Component\Templating\Helper\AssetsHelper;
+    use Symfony\Component\Templating\Helper\SlotsHelper;
     // ...
 
-    $templating->set(new AssetsHelper());
+    $templating->set(new SlotsHelper());
 
 Custom Helpers
 ~~~~~~~~~~~~~~
@@ -188,9 +194,7 @@ takes a list of engines and acts just like a normal templating engine. The
 only difference is that it delegates the calls to one of the other engines. To
 choose which one to use for the template, the
 :method:`EngineInterface::supports() <Symfony\\Component\\Templating\\EngineInterface::supports>`
-method is used.
-
-.. code-block:: php
+method is used::
 
     use Acme\Templating\CustomEngine;
     use Symfony\Component\Templating\PhpEngine;
